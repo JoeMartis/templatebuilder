@@ -465,6 +465,29 @@
   }
   .footer-brand strong { color: var(--mit-red); }
 
+  /* ── Lecture / Assignment per-item groups ── */
+  .lec-group, .assign-group {
+    margin-bottom: 10px;
+    border: 1px solid var(--warm-gray);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .lec-group-header, .assign-group-header {
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--warm-gray);
+    color: var(--muted);
+  }
+  .lec-group-body, .assign-group-body {
+    padding: 10px 14px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
   /* ── Section sub-label ── */
   .section-sub {
     font-size: 11px;
@@ -597,6 +620,8 @@
           <button class="counter-btn" onclick="adjust('assignments',1)">+</button>
         </div>
       </div>
+      <div class="section-sub">Per-assignment settings</div>
+      <div id="per-assignment-groups"></div>
     </div>
 
   </div>
@@ -685,6 +710,7 @@ function adjust(id, delta) {
   const max = parseInt(el.max) || 99;
   el.value = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
   if (id === 'lectures') renderLectureGroups();
+  if (id === 'assignments') renderAssignmentGroups();
   updateSummary();
 }
 
@@ -733,6 +759,48 @@ function renderLectureGroups() {
 function adjustSeg(idx, delta) { adjust(`seg_${idx}`, delta); }
 function adjustKc(idx, delta)  { adjust(`kc_${idx}`, delta); }
 
+function renderAssignmentGroups() {
+  const count = parseInt(document.getElementById('assignments').value) || 1;
+  const container = document.getElementById('per-assignment-groups');
+
+  const prevParts    = Array.from(container.querySelectorAll('.parts-input')).map(el => parseInt(el.value) || 2);
+  const prevProblems = Array.from(container.querySelectorAll('.problems-input')).map(el => parseInt(el.value) || 5);
+
+  container.innerHTML = '';
+
+  for (let i = 1; i <= count; i++) {
+    const partsVal    = prevParts[i - 1]    != null ? (prevParts[i - 1]    || 1) : 2;
+    const problemsVal = prevProblems[i - 1] != null ? (prevProblems[i - 1] || 1) : 5;
+
+    const group = document.createElement('div');
+    group.className = 'assign-group';
+    group.innerHTML =
+      `<div class="assign-group-header">Assignment ${i}</div>` +
+      `<div class="assign-group-body">` +
+        `<div class="counter-item">` +
+          `<label>parts</label>` +
+          `<button class="counter-btn" onclick="adjustParts(${i},-1)">−</button>` +
+          `<input class="counter-val parts-input" type="number" id="parts_${i}" value="${partsVal}" min="1" max="10">` +
+          `<button class="counter-btn" onclick="adjustParts(${i},1)">+</button>` +
+        `</div>` +
+        `<div class="counter-item">` +
+          `<label>problems / part</label>` +
+          `<button class="counter-btn" onclick="adjustProblems(${i},-1)">−</button>` +
+          `<input class="counter-val problems-input" type="number" id="problems_${i}" value="${problemsVal}" min="1" max="20">` +
+          `<button class="counter-btn" onclick="adjustProblems(${i},1)">+</button>` +
+        `</div>` +
+      `</div>`;
+    container.appendChild(group);
+  }
+
+  container.querySelectorAll('.parts-input, .problems-input').forEach(el =>
+    el.addEventListener('input', updateSummary)
+  );
+}
+
+function adjustParts(idx, delta)    { adjust(`parts_${idx}`, delta); }
+function adjustProblems(idx, delta) { adjust(`problems_${idx}`, delta); }
+
 function toggleOptional(id, show) {
   const body = document.getElementById(id + '-body');
   if (show) body.classList.add('open');
@@ -767,12 +835,19 @@ function updateSummary() {
     ? (kcCounts[0] > 0 ? `${kcCounts[0]} KC${kcCounts[0]!==1?'s':''}/segment` : '')
     : (totalKcs > 0 ? `${totalKcs} KCs total` : '');
 
+  const partsCounts    = Array.from({length: assignments}, (_, i) => parseInt(document.getElementById(`parts_${i+1}`)?.value) || 2);
+  const problemsCounts = Array.from({length: assignments}, (_, i) => parseInt(document.getElementById(`problems_${i+1}`)?.value) || 5);
+  const totalProblems  = partsCounts.reduce((sum, p, i) => sum + p * (problemsCounts[i] || 5), 0);
+  const assignLabel    = assignments > 0
+    ? `${assignments} assignment${assignments!==1?'s':''} · ${totalProblems} questions`
+    : `${assignments} assignment${assignments!==1?'s':''}`;
+
   let pills = [
     `<span class="pill pill-red">${lectures} lecture${lectures!==1?'s':''}</span>`,
     lectures > 0 ? `<span class="pill pill-red">${segLabel}</span>` : '',
     kcLabel ? `<span class="pill pill-blue" style="color:var(--blue);border-color:rgba(29,78,216,0.3);background:rgba(29,78,216,0.05)">${kcLabel}</span>` : '',
     hasRecit ? `<span class="pill pill-purple">${recitations} recitation${recitations!==1?'s':''}</span>` : '',
-    `<span class="pill pill-orange">${assignments} assignment${assignments!==1?'s':''}</span>`,
+    `<span class="pill pill-orange">${assignLabel}</span>`,
   ].filter(Boolean);
   s.innerHTML = pills.join('');
   s.classList.add('show');
@@ -781,11 +856,13 @@ function updateSummary() {
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   renderLectureGroups();
+  renderAssignmentGroups();
   updateSummary();
-  // keep summary live on static counters; group inputs are wired inside renderLectureGroups
-  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input)').forEach(el => {
+  // keep summary live on static counters; dynamic inputs are wired inside their render fns
+  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input):not(.parts-input):not(.problems-input)').forEach(el => {
     el.addEventListener('input', () => {
-      if (el.id === 'lectures') renderLectureGroups();
+      if (el.id === 'lectures')    renderLectureGroups();
+      if (el.id === 'assignments') renderAssignmentGroups();
       updateSummary();
     });
   });
@@ -799,7 +876,8 @@ async function generate() {
 
   // Snapshot config immediately — before any await — so async UI delays
   // can never read stale form values (audit fix: race-condition).
-  const numLectures = parseInt(document.getElementById('lectures').value) || 3;
+  const numLectures    = parseInt(document.getElementById('lectures').value)    || 3;
+  const numAssignments = parseInt(document.getElementById('assignments').value) || 1;
   const config = {
     modNum:       document.getElementById('modNum').value.trim()     || 'N',
     modTitle:     document.getElementById('modTitle').value.trim()   || 'Module Title',
@@ -819,7 +897,15 @@ async function generate() {
     hasRecit:     document.getElementById('hasRecitations').checked,
     recitations:  parseInt(document.getElementById('recitations').value) || 1,
     recitSegs:    parseInt(document.getElementById('recitSegs').value)   || 1,
-    assignments:  parseInt(document.getElementById('assignments').value) || 1,
+    assignments:  numAssignments,
+    partsPerAssignment: Array.from(
+      {length: numAssignments},
+      (_, i) => { const v = parseInt(document.getElementById(`parts_${i+1}`)?.value); return (v >= 1) ? v : 2; }
+    ),
+    problemsPerPart: Array.from(
+      {length: numAssignments},
+      (_, i) => { const v = parseInt(document.getElementById(`problems_${i+1}`)?.value); return (v >= 1) ? v : 5; }
+    ),
     inclTOC:      document.getElementById('inclTOC').checked,
     inclInstr:    document.getElementById('inclInstr').checked,
     inclProdNotes:document.getElementById('inclProdNotes').checked,
@@ -1019,6 +1105,52 @@ async function buildDocx(cfg) {
     ];
   }
 
+  // ── Multiple-Choice Question ──
+  function mcQuestion(num) {
+    const b = {style:BorderStyle.SINGLE,size:2,color:"F59E0B"};
+    const borders = {top:b,bottom:b,left:b,right:b};
+    return [
+      sp(80),
+      new Table({
+        width:{size:9360,type:WidthType.DXA}, columnWidths:[9360],
+        rows:[new TableRow({ children:[new TableCell({
+          borders, width:{size:9360,type:WidthType.DXA},
+          shading:{fill:ORANGE_BG,type:ShadingType.CLEAR},
+          margins:{top:140,bottom:140,left:200,right:200},
+          children:[
+            new Paragraph({spacing:{before:0,after:80}, children:[
+              txt(`Question ${num}`,{bold:true,color:ORANGE_H})
+            ]}),
+            new Paragraph({spacing:{before:0,after:60}, children:[
+              txt("Question:",{bold:true})
+            ]}),
+            new Paragraph({spacing:{before:0,after:100}, children:[
+              txt("Type your question here.",{color:"999999",italics:true})
+            ]}),
+            ...["A","B","C","D","E"].map(letter =>
+              new Paragraph({spacing:{before:0,after:36}, children:[
+                txt(`○  ${letter}.  `,{color:MED}),
+                txt("[Choice text]",{color:"999999",italics:true})
+              ]})
+            ),
+            sp(60),
+            new Paragraph({spacing:{before:0,after:60}, children:[
+              txt("Correct answer:  ",{bold:true}),
+              txt("___  (enter A, B, C, D, or E)",{color:"999999",italics:true})
+            ]}),
+            new Paragraph({spacing:{before:60,after:40}, children:[
+              txt("Explanation:",{bold:true})
+            ]}),
+            new Paragraph({spacing:{before:0,after:0}, children:[
+              txt("Explain why the correct answer is right.",{color:"999999",italics:true})
+            ]}),
+          ]
+        })})]
+      }),
+      sp(40),
+    ];
+  }
+
   // ════════════════════════════════════════════════════════════
   // COVER PAGE
   // ════════════════════════════════════════════════════════════
@@ -1050,7 +1182,7 @@ async function buildDocx(cfg) {
         children:[txt("How to use this template",{bold:true})]}),
       body("1. Fill in every gray field — replace italic placeholder text with your content."),
       body("2. Yellow instruction boxes are guides — remove them before submitting."),
-      body(`3. This template includes ${cfg.lectures} lecture${cfg.lectures!==1?'s':''}, ${cfg.hasRecit?cfg.recitations+' recitation'+(cfg.recitations!==1?'s':''):'no recitations'}, and ${cfg.assignments} assignment${cfg.assignments!==1?'s':''}.`),
+      body(`3. This template includes ${cfg.lectures} lecture${cfg.lectures!==1?'s':''}, ${cfg.hasRecit?cfg.recitations+' recitation'+(cfg.recitations!==1?'s':''):'no recitations'}, and ${cfg.assignments} assignment${cfg.assignments!==1?'s':''} (each divided into parts with multiple-choice questions).`),
       body("4. Submit completed template to your Production Manager for Open edX entry."),
     ] : []),
     pageBreak(),
@@ -1268,6 +1400,9 @@ async function buildDocx(cfg) {
     );
 
     for (let a = 1; a <= cfg.assignments; a++) {
+      const numParts    = (cfg.partsPerAssignment  || [])[a - 1] || 2;
+      const numProblems = (cfg.problemsPerPart      || [])[a - 1] || 5;
+
       assignSection.push(
         h2(`Assignment ${a} of ${cfg.assignments}`),
         sp(120),
@@ -1277,38 +1412,24 @@ async function buildDocx(cfg) {
         ...(cfg.inclInstr ? [noteBox("1–2 sentences explaining what the assignment asks learners to do and how it connects to the module learning goals."), sp(80)] : []),
         bigFieldBox("Assignment Overview", [
           "Write 1–2 sentences describing the assignment.",
-          "Example: In this assignment, you will apply the concepts from this module to a real dataset.",
+          `Example: In this assignment, you will practice the concepts from this module across ${numParts} part${numParts!==1?'s':''}.`,
         ], ORANGE_BG),
         sp(120),
+      );
 
-        h3(`Graded Assignment ${a}`),
-        sp(60),
-        ...(cfg.inclInstr ? [noteBox("Provide full assignment content. Include all questions, prompts, or problem statements. Attach code notebooks, data files, or rubrics separately."), sp(80)] : []),
-        fieldBox("Assignment Title", `e.g., Assignment ${a}: [Title]`, ORANGE_BG),
-        sp(80),
-        fieldBox("Point Value / Weight", "e.g., 20 points (10% of final grade)", ORANGE_BG),
-        sp(80),
-        fieldBox("Estimated Completion Time", "e.g., 2–3 hours", ORANGE_BG),
-        sp(80),
-        bigFieldBox("Instructions to Learners", [
-          "Write the instructions exactly as learners will see them.",
-          "",
-          "Example:",
-          "  1. Load and explore the provided dataset.",
-          "  2. Build and evaluate a model.",
-          "  3. Submit your code and a short written analysis.",
-        ], ORANGE_BG, "Attach rubric, starter code, or data files separately and note filenames below."),
-        sp(80),
-        fieldBox("Attached Files (list filenames)", "e.g., data.csv, starter_code.ipynb, rubric.pdf", ORANGE_BG),
-        sp(80),
-        bigFieldBox("Grading Rubric / Answer Key (Production Use Only — Not Shown to Learners)", [
-          "Provide the rubric or answer key here.",
-          "  • Criterion 1: [X pts] Description",
-          "  • Criterion 2: [X pts] Description",
-          "  • Criterion 3: [X pts] Description",
-        ], LIGHT),
-        sp(120),
+      for (let p = 1; p <= numParts; p++) {
+        assignSection.push(
+          h3(`Part ${p}`),
+          sp(60),
+          ...(cfg.inclInstr ? [noteBox(`Part ${p} contains ${numProblems} multiple-choice question${numProblems!==1?'s':''}. Fill in each question, mark the correct answer, and provide an explanation.`), sp(80)] : []),
+        );
+        for (let q = 1; q <= numProblems; q++) {
+          assignSection.push(...mcQuestion(q));
+        }
+        assignSection.push(sp(100));
+      }
 
+      assignSection.push(
         h3(`Assignment ${a} Summary`),
         sp(60),
         bigFieldBox("Assignment Summary", [
