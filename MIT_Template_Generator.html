@@ -537,18 +537,13 @@
           <button class="counter-btn" onclick="adjust('lectures',1)">+</button>
         </div>
         <div class="counter-item">
-          <label>Video segments per lecture</label>
-          <button class="counter-btn" onclick="adjust('segments',-1)">−</button>
-          <input class="counter-val" type="number" id="segments" value="3" min="1" max="6">
-          <button class="counter-btn" onclick="adjust('segments',1)">+</button>
-        </div>
-        <div class="counter-item">
           <label>Knowledge checks per segment</label>
           <button class="counter-btn" onclick="adjust('kcs',-1)">−</button>
           <input class="counter-val" type="number" id="kcs" value="1" min="0" max="3">
           <button class="counter-btn" onclick="adjust('kcs',1)">+</button>
         </div>
       </div>
+      <div class="counter-row" id="per-lecture-segments" style="margin-top:10px;"></div>
     </div>
 
     <div class="divider"></div>
@@ -692,7 +687,31 @@ function adjust(id, delta) {
   const min = parseInt(el.min) || 0;
   const max = parseInt(el.max) || 99;
   el.value = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
+  if (id === 'lectures') renderLectureSegmentInputs();
   updateSummary();
+}
+
+function renderLectureSegmentInputs() {
+  const count = parseInt(document.getElementById('lectures').value) || 3;
+  const container = document.getElementById('per-lecture-segments');
+  const existing = container.querySelectorAll('.seg-input');
+  const prevValues = Array.from(existing).map(el => parseInt(el.value) || 3);
+  container.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const val = prevValues[i - 1] || 3;
+    const item = document.createElement('div');
+    item.className = 'counter-item';
+    item.innerHTML = `<label>Lecture ${i} segments</label>` +
+      `<button class="counter-btn" onclick="adjustSeg(${i},-1)">−</button>` +
+      `<input class="counter-val seg-input" type="number" id="seg_${i}" value="${val}" min="1" max="6">` +
+      `<button class="counter-btn" onclick="adjustSeg(${i},1)">+</button>`;
+    container.appendChild(item);
+  }
+  container.querySelectorAll('.seg-input').forEach(el => el.addEventListener('input', updateSummary));
+}
+
+function adjustSeg(idx, delta) {
+  adjust(`seg_${idx}`, delta);
 }
 
 function toggleOptional(id, show) {
@@ -705,16 +724,24 @@ function toggleOptional(id, show) {
 function updateSummary() {
   const s = document.getElementById('summary');
   const lectures   = parseInt(document.getElementById('lectures').value) || 0;
-  const segments   = parseInt(document.getElementById('segments').value) || 0;
   const kcs        = parseInt(document.getElementById('kcs').value) || 0;
   const hasRecit   = document.getElementById('hasRecitations').checked;
   const recitations= parseInt(document.getElementById('recitations').value) || 0;
   const hasAssign  = document.getElementById('hasAssignments').checked;
   const assignments= parseInt(document.getElementById('assignments').value) || 0;
 
+  const segCounts = Array.from({length: lectures}, (_, i) =>
+    parseInt(document.getElementById(`seg_${i+1}`)?.value) || 3
+  );
+  const totalSegs = segCounts.reduce((a, b) => a + b, 0);
+  const allSame = segCounts.every(v => v === segCounts[0]);
+  const segLabel = allSame
+    ? `${segCounts[0]} segment${segCounts[0]!==1?'s':''}/lecture`
+    : `${totalSegs} segments total`;
+
   let pills = [
     `<span class="pill pill-red">${lectures} lecture${lectures!==1?'s':''}</span>`,
-    `<span class="pill pill-red">${segments} segment${segments!==1?'s':''}/lecture</span>`,
+    lectures > 0 ? `<span class="pill pill-red">${segLabel}</span>` : '',
     kcs > 0 ? `<span class="pill pill-blue" style="color:var(--blue);border-color:rgba(29,78,216,0.3);background:rgba(29,78,216,0.05)">${kcs} KC${kcs!==1?'s':''}/segment</span>` : '',
     hasRecit ? `<span class="pill pill-purple">${recitations} recitation${recitations!==1?'s':''}</span>` : '',
     hasAssign ? `<span class="pill pill-orange">${assignments} assignment${assignments!==1?'s':''}</span>` : '',
@@ -725,9 +752,13 @@ function updateSummary() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+  renderLectureSegmentInputs();
   updateSummary();
-  // keep summary live
-  document.querySelectorAll('.counter-val').forEach(el => el.addEventListener('input', updateSummary));
+  // keep summary live on static counters; seg inputs are wired inside renderLectureSegmentInputs
+  document.querySelectorAll('.counter-val:not(.seg-input)').forEach(el => el.addEventListener('input', () => {
+    if (el.id === 'lectures') renderLectureSegmentInputs();
+    updateSummary();
+  }));
 });
 
 // ── DOCX generation ──────────────────────────────────────────────
@@ -751,7 +782,10 @@ async function generate() {
       time:         document.getElementById('modTime').value.trim()  || '[Estimated time]',
       prereqs:      document.getElementById('modPrereqs').value.trim() || '[Prerequisites]',
       lectures:     parseInt(document.getElementById('lectures').value)   || 3,
-      segments:     parseInt(document.getElementById('segments').value)   || 3,
+      segmentsPerLecture: Array.from(
+        {length: parseInt(document.getElementById('lectures').value) || 3},
+        (_, i) => parseInt(document.getElementById(`seg_${i+1}`)?.value) || 3
+      ),
       kcs:          parseInt(document.getElementById('kcs').value)        || 1,
       hasRecit:     document.getElementById('hasRecitations').checked,
       recitations:  parseInt(document.getElementById('recitations').value) || 1,
@@ -1064,11 +1098,12 @@ async function buildDocx(cfg) {
 
       h3(`Lecture ${l} Videos`),
       sp(60),
-      ...(cfg.inclInstr ? [noteBox(`This lecture has ${cfg.segments} segment${cfg.segments!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check${cfg.kcs>1?'s':''} that follow.`), sp(80)] : []),
+      ...(cfg.inclInstr ? [noteBox(`This lecture has ${(cfg.segmentsPerLecture||[])[l-1]||cfg.segments||3} segment${((cfg.segmentsPerLecture||[])[l-1]||cfg.segments||3)!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check${cfg.kcs>1?'s':''} that follow.`), sp(80)] : []),
     );
 
     // Segments
-    for (let s = 1; s <= cfg.segments; s++) {
+    const numSegs_l = (cfg.segmentsPerLecture||[])[l-1] || cfg.segments || 3;
+    for (let s = 1; s <= numSegs_l; s++) {
       const kcTotal = cfg.kcs;
       lecturesSection.push(
         sp(80),
