@@ -34,7 +34,6 @@
     overflow-x: hidden;
   }
 
-  /* ── Background texture ── */
   body::before {
     content: '';
     position: fixed;
@@ -54,13 +53,47 @@
     padding: 0 24px 80px;
   }
 
+  /* ── Entrance animations ── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes slideInGroup {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes countFlash {
+    0%   { background: white; }
+    35%  { background: rgba(163,31,52,0.12); transform: scale(1.15); }
+    100% { background: white; transform: scale(1); }
+  }
+  @keyframes pillPop {
+    from { opacity: 0; transform: scale(0.82); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmerSweep {
+    from { left: -80px; }
+    to   { left: calc(100% + 80px); }
+  }
+  @keyframes successPulse {
+    0%   { box-shadow: 0 4px 20px rgba(26,107,60,0.35); }
+    50%  { box-shadow: 0 0 0 10px rgba(26,107,60,0.12); }
+    100% { box-shadow: 0 4px 20px rgba(26,107,60,0.35); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* ── Header ── */
   header {
     padding: 56px 0 40px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeSlideUp 0.5s ease-out 0.05s forwards;
   }
-
   .eyebrow {
     font-family: 'DM Mono', monospace;
     font-size: 10px;
@@ -80,7 +113,6 @@
     background: var(--mit-red);
     opacity: 0.4;
   }
-
   h1 {
     font-family: 'DM Serif Display', serif;
     font-size: clamp(28px, 5vw, 42px);
@@ -88,11 +120,7 @@
     color: var(--mit-dark);
     margin-bottom: 14px;
   }
-  h1 em {
-    font-style: italic;
-    color: var(--mit-red);
-  }
-
+  h1 em { font-style: italic; color: var(--mit-red); }
   .subtitle {
     font-size: 15px;
     color: var(--muted);
@@ -100,7 +128,7 @@
     max-width: 520px;
   }
 
-  /* ── Section cards ── */
+  /* ── Cards ── */
   .card {
     background: white;
     border: 1px solid var(--warm-gray);
@@ -108,10 +136,15 @@
     padding: 32px;
     margin-bottom: 20px;
     position: relative;
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    opacity: 0;
+    animation: fadeSlideUp 0.45s ease-out forwards;
   }
   .card:hover { box-shadow: 0 4px 24px rgba(163,31,52,0.07); }
-
+  .card:focus-within {
+    border-color: rgba(163,31,52,0.25);
+    box-shadow: 0 4px 24px rgba(163,31,52,0.08);
+  }
   .card-label {
     font-family: 'DM Mono', monospace;
     font-size: 9px;
@@ -129,7 +162,6 @@
     height: 1px;
     background: currentColor;
   }
-
   .card-title {
     font-family: 'DM Serif Display', serif;
     font-size: 20px;
@@ -146,7 +178,6 @@
   /* ── Form fields ── */
   .field-group { margin-bottom: 20px; }
   .field-group:last-child { margin-bottom: 0; }
-
   label {
     display: block;
     font-size: 12px;
@@ -161,7 +192,6 @@
     font-size: 11px;
     margin-left: 6px;
   }
-
   input[type="text"], input[type="number"], select, textarea {
     width: 100%;
     padding: 10px 14px;
@@ -183,7 +213,6 @@
   }
   input[type="number"] { max-width: 100px; }
   textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
-
   select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a6e68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -192,7 +221,7 @@
     cursor: pointer;
   }
 
-  /* ── Counter control ── */
+  /* ── Counter ── */
   .counter-row {
     display: flex;
     align-items: center;
@@ -202,7 +231,6 @@
   .counter-item {
     display: flex;
     align-items: center;
-    gap: 0;
     border: 1px solid var(--warm-gray);
     border-radius: 8px;
     overflow: hidden;
@@ -236,7 +264,8 @@
     font-weight: 300;
     line-height: 1;
   }
-  .counter-btn:hover { background: rgba(163,31,52,0.08); }
+  .counter-btn:hover  { background: rgba(163,31,52,0.08); }
+  .counter-btn:active { background: rgba(163,31,52,0.14); }
   .counter-val {
     width: 36px;
     height: 40px;
@@ -254,6 +283,7 @@
     padding: 0;
   }
   .counter-val:focus { box-shadow: none; border-color: var(--warm-gray); }
+  .counter-val.flash { animation: countFlash 0.3s ease-out; }
 
   /* ── Toggle ── */
   .toggle-row {
@@ -281,10 +311,8 @@
   .toggle-track::after {
     content: '';
     position: absolute;
-    left: 3px;
-    top: 3px;
-    width: 18px;
-    height: 18px;
+    left: 3px; top: 3px;
+    width: 18px; height: 18px;
     background: white;
     border-radius: 50%;
     transition: transform 0.2s;
@@ -293,9 +321,9 @@
   .toggle input:checked + .toggle-track { background: var(--mit-red); }
   .toggle input:checked + .toggle-track::after { transform: translateX(20px); }
   .toggle-label { font-size: 14px; color: var(--text); }
-  .toggle-sub { font-size: 12px; color: var(--muted); }
+  .toggle-sub   { font-size: 12px; color: var(--muted); }
 
-  /* ── Two-col grid ── */
+  /* ── Grid ── */
   .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -315,7 +343,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0;
   }
   .optional-title {
     font-size: 14px;
@@ -343,6 +370,41 @@
   }
   .optional-body.open { display: block; }
 
+  /* ── Per-lecture groups ── */
+  #per-lecture-groups { margin-top: 14px; }
+  .lec-group {
+    margin-bottom: 8px;
+    border: 1px solid var(--warm-gray);
+    border-radius: 8px;
+    overflow: hidden;
+    animation: slideInGroup 0.22s ease-out both;
+  }
+  .lec-group-header {
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--warm-gray);
+    color: var(--muted);
+  }
+  .lec-group-body {
+    padding: 10px 14px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .lec-kc-label {
+    width: 100%;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 4px 0 2px;
+  }
+
   /* ── Generate button ── */
   .generate-wrap {
     margin-top: 40px;
@@ -351,7 +413,6 @@
     align-items: center;
     gap: 16px;
   }
-
   .btn-generate {
     position: relative;
     display: inline-flex;
@@ -367,7 +428,7 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.25s;
     box-shadow: 0 4px 20px rgba(163,31,52,0.3);
     overflow: hidden;
   }
@@ -376,17 +437,35 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+    pointer-events: none;
   }
-  .btn-generate:hover {
+  .btn-generate::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -80px;
+    width: 60px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+    transform: skewX(-15deg);
+    opacity: 0;
+  }
+  .btn-generate.loading::after {
+    opacity: 1;
+    animation: shimmerSweep 1.1s linear infinite;
+  }
+  .btn-generate:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 32px rgba(163,31,52,0.4);
     background: #8a1a2b;
   }
-  .btn-generate:active { transform: translateY(0); }
-  .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-  .btn-icon { font-size: 20px; }
-
+  .btn-generate:active:not(:disabled) { transform: translateY(0); }
+  .btn-generate:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+  .btn-generate.success {
+    background: var(--green) !important;
+    box-shadow: 0 4px 20px rgba(26,107,60,0.35) !important;
+    animation: successPulse 0.45s ease-out;
+  }
+  .btn-icon { font-size: 20px; line-height: 1; }
   .generate-note {
     font-size: 12px;
     color: var(--muted);
@@ -395,7 +474,7 @@
     max-width: 400px;
   }
 
-  /* ── Progress / status ── */
+  /* ── Status ── */
   #status {
     display: none;
     align-items: center;
@@ -408,20 +487,19 @@
     color: var(--muted);
     width: 100%;
     max-width: 460px;
+    animation: fadeIn 0.2s ease-out;
   }
   #status.show { display: flex; }
   .spinner {
-    width: 18px;
-    height: 18px;
+    width: 18px; height: 18px;
     border: 2px solid var(--warm-gray);
     border-top-color: var(--mit-red);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
     flex-shrink: 0;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Summary pill ── */
+  /* ── Summary pills ── */
   #summary {
     display: none;
     flex-wrap: wrap;
@@ -435,9 +513,10 @@
     padding: 4px 12px;
     border-radius: 20px;
     border: 1px solid;
+    animation: pillPop 0.2s ease-out both;
   }
   .pill-red    { color: var(--mit-red); border-color: rgba(163,31,52,0.3); background: rgba(163,31,52,0.05); }
-  .pill-green  { color: var(--green);   border-color: rgba(26,107,60,0.3);  background: rgba(26,107,60,0.05); }
+  .pill-blue   { color: var(--blue);    border-color: rgba(29,78,216,0.3);  background: rgba(29,78,216,0.05); }
   .pill-purple { color: var(--purple);  border-color: rgba(107,33,168,0.3); background: rgba(107,33,168,0.05); }
   .pill-orange { color: var(--orange);  border-color: rgba(146,64,14,0.3);  background: rgba(146,64,14,0.05); }
 
@@ -462,11 +541,7 @@
   .footer-brand strong { color: var(--mit-red); }
 
   /* ── Divider ── */
-  .divider {
-    height: 1px;
-    background: var(--warm-gray);
-    margin: 8px 0 24px;
-  }
+  .divider { height: 1px; background: var(--warm-gray); margin: 8px 0 24px; }
 </style>
 </head>
 <body>
@@ -478,7 +553,7 @@
     <p class="subtitle">Configure your module structure below and download a fully formatted Word template ready for faculty authoring.</p>
   </header>
 
-  <!-- ── Module Info ── -->
+  <!-- ── Step 1: Module Info ── -->
   <div class="card">
     <div class="card-label">Step 1</div>
     <div class="card-title">Module Information</div>
@@ -487,7 +562,7 @@
     <div class="grid-2">
       <div class="field-group">
         <label>Module Number <span>e.g., 3</span></label>
-        <input type="text" id="modNum" placeholder="3" value="">
+        <input type="text" id="modNum" placeholder="3">
       </div>
       <div class="field-group">
         <label>Module Title <span>e.g., Supervised Learning</span></label>
@@ -505,20 +580,9 @@
         <input type="text" id="modTAs" placeholder="Alex Johnson">
       </div>
     </div>
-
-    <div class="grid-2">
-      <div class="field-group">
-        <label>Estimated Completion Time</label>
-        <input type="text" id="modTime" placeholder="e.g., 2.5 hours">
-      </div>
-      <div class="field-group">
-        <label>Prerequisites</label>
-        <input type="text" id="modPrereqs" placeholder="e.g., Basic Python">
-      </div>
-    </div>
   </div>
 
-  <!-- ── Structure ── -->
+  <!-- ── Step 2: Structure ── -->
   <div class="card">
     <div class="card-label">Step 2</div>
     <div class="card-title">Module Structure</div>
@@ -530,23 +594,12 @@
       <div class="counter-row">
         <div class="counter-item">
           <label>Lectures</label>
-          <button class="counter-btn" onclick="adjust('lectures',-1)">−</button>
+          <button class="counter-btn" onclick="adjustLectures(-1)">−</button>
           <input class="counter-val" type="number" id="lectures" value="3" min="1" max="10">
-          <button class="counter-btn" onclick="adjust('lectures',1)">+</button>
-        </div>
-        <div class="counter-item">
-          <label>Video segments per lecture</label>
-          <button class="counter-btn" onclick="adjust('segments',-1)">−</button>
-          <input class="counter-val" type="number" id="segments" value="3" min="1" max="6">
-          <button class="counter-btn" onclick="adjust('segments',1)">+</button>
-        </div>
-        <div class="counter-item">
-          <label>Knowledge checks per segment</label>
-          <button class="counter-btn" onclick="adjust('kcs',-1)">−</button>
-          <input class="counter-val" type="number" id="kcs" value="1" min="0" max="3">
-          <button class="counter-btn" onclick="adjust('kcs',1)">+</button>
+          <button class="counter-btn" onclick="adjustLectures(1)">+</button>
         </div>
       </div>
+      <div id="per-lecture-groups"></div>
     </div>
 
     <div class="divider"></div>
@@ -607,14 +660,14 @@
 
   </div>
 
-  <!-- ── Options ── -->
+  <!-- ── Step 3: Options ── -->
   <div class="card">
     <div class="card-label">Step 3</div>
     <div class="card-title">Options</div>
     <div class="card-desc">Fine-tune what gets included in your template.</div>
 
     <div class="field-group">
-      <label class="toggle-row" for="inclTOC">
+      <label class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="inclTOC" checked>
           <span class="toggle-track"></span>
@@ -627,7 +680,7 @@
     </div>
 
     <div class="field-group" style="margin-top:16px;">
-      <label class="toggle-row" for="inclInstr">
+      <label class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="inclInstr" checked>
           <span class="toggle-track"></span>
@@ -640,7 +693,7 @@
     </div>
 
     <div class="field-group" style="margin-top:16px;">
-      <label class="toggle-row" for="inclProdNotes">
+      <label class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="inclProdNotes" checked>
           <span class="toggle-track"></span>
@@ -655,10 +708,7 @@
 
   <!-- ── Generate ── -->
   <div class="generate-wrap">
-
-    <div id="summary">
-      <!-- Pills injected by JS -->
-    </div>
+    <div id="summary"></div>
 
     <button class="btn-generate" onclick="generate()">
       <span class="btn-icon">⬇</span>
@@ -678,75 +728,224 @@
 
   <footer>
     <div class="footer-brand"><strong>MIT</strong> Universal AI — Office of Digital Learning</div>
-    <div class="footer-brand" style="font-size:9px;">Template Generator v1.0</div>
+    <div class="footer-brand" style="font-size:9px;">Template Generator v2.0</div>
   </footer>
 
 </div>
-
 <script>
-// ── Counter helpers ──────────────────────────────────────────────
+// ── Counter helpers ───────────────────────────────────────────────
 function adjust(id, delta) {
   const el = document.getElementById(id);
-  const min = parseInt(el.min) || 0;
-  const max = parseInt(el.max) || 99;
-  el.value = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
+  if (!el) return;
+  const min  = parseInt(el.min) || 0;
+  const max  = parseInt(el.max) || 99;
+  const next = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
+  if (next !== parseInt(el.value)) { el.value = next; flashVal(el); }
   updateSummary();
+}
+
+function flashVal(el) {
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+  el.addEventListener('animationend', () => el.classList.remove('flash'), { once: true });
 }
 
 function toggleOptional(id, show) {
-  const body = document.getElementById(id + '-body');
-  if (show) body.classList.add('open');
-  else body.classList.remove('open');
+  document.getElementById(id + '-body').classList.toggle('open', show);
   updateSummary();
 }
 
-function updateSummary() {
-  const s = document.getElementById('summary');
-  const lectures   = parseInt(document.getElementById('lectures').value) || 0;
-  const segments   = parseInt(document.getElementById('segments').value) || 0;
-  const kcs        = parseInt(document.getElementById('kcs').value) || 0;
-  const hasRecit   = document.getElementById('hasRecitations').checked;
-  const recitations= parseInt(document.getElementById('recitations').value) || 0;
-  const hasAssign  = document.getElementById('hasAssignments').checked;
-  const assignments= parseInt(document.getElementById('assignments').value) || 0;
+// ── Lecture counter ───────────────────────────────────────────────
+function adjustLectures(delta) {
+  adjust('lectures', delta);
+  renderLectureGroups();
+}
 
-  let pills = [
-    `<span class="pill pill-red">${lectures} lecture${lectures!==1?'s':''}</span>`,
-    `<span class="pill pill-red">${segments} segment${segments!==1?'s':''}/lecture</span>`,
-    kcs > 0 ? `<span class="pill pill-blue" style="color:var(--blue);border-color:rgba(29,78,216,0.3);background:rgba(29,78,216,0.05)">${kcs} KC${kcs!==1?'s':''}/segment</span>` : '',
-    hasRecit ? `<span class="pill pill-purple">${recitations} recitation${recitations!==1?'s':''}</span>` : '',
-    hasAssign ? `<span class="pill pill-orange">${assignments} assignment${assignments!==1?'s':''}</span>` : '',
-  ].filter(Boolean);
-  s.innerHTML = pills.join('');
+// ── Per-lecture group rendering ───────────────────────────────────
+function renderLectureGroups() {
+  const count     = parseInt(document.getElementById('lectures').value) || 3;
+  const container = document.getElementById('per-lecture-groups');
+
+  // Preserve existing values before clearing
+  const prevSegs = Array.from(container.querySelectorAll('.seg-input'))
+    .map(el => parseInt(el.value) || 3);
+  const prevKcs = prevSegs.map((segCount, i) =>
+    Array.from({ length: segCount }, (_, j) => {
+      const el = document.getElementById(`kc_${i + 1}_${j + 1}`);
+      return el ? (parseInt(el.value) || 0) : 1;
+    })
+  );
+
+  container.innerHTML = '';
+
+  for (let i = 1; i <= count; i++) {
+    const segVal = prevSegs[i - 1] != null ? (prevSegs[i - 1] || 1) : 3;
+    const group  = document.createElement('div');
+    group.className = 'lec-group';
+    group.style.animationDelay = `${(i - 1) * 0.04}s`;
+    group.innerHTML =
+      `<div class="lec-group-header">Lecture ${i}</div>` +
+      `<div class="lec-group-body">` +
+        `<div class="counter-item">` +
+          `<label>segments</label>` +
+          `<button class="counter-btn" onclick="adjustSeg(${i},-1)">−</button>` +
+          `<input class="counter-val seg-input" type="number" id="seg_${i}" value="${segVal}" min="1" max="6">` +
+          `<button class="counter-btn" onclick="adjustSeg(${i},1)">+</button>` +
+        `</div>` +
+        `<div class="lec-kc-label">KCs per segment</div>` +
+        `<div id="seg-kc-${i}" style="display:flex;gap:8px;flex-wrap:wrap;width:100%"></div>` +
+      `</div>`;
+    container.appendChild(group);
+    renderKcRows(i, segVal, prevKcs[i - 1] || []);
+  }
+
+  container.querySelectorAll('.seg-input').forEach(el =>
+    el.addEventListener('input', updateSummary)
+  );
+}
+
+function renderKcRows(lecIdx, segCount, prevKcs) {
+  const container = document.getElementById(`seg-kc-${lecIdx}`);
+  if (!container) return;
+  container.innerHTML = '';
+  for (let j = 1; j <= segCount; j++) {
+    const kcVal = (prevKcs[j - 1] != null && !isNaN(prevKcs[j - 1])) ? prevKcs[j - 1] : 1;
+    const item  = document.createElement('div');
+    item.className = 'counter-item';
+    item.style.animationDelay = `${(j - 1) * 0.03}s`;
+    item.innerHTML =
+      `<label>seg ${j}</label>` +
+      `<button class="counter-btn" onclick="adjustKc(${lecIdx},${j},-1)">−</button>` +
+      `<input class="counter-val kc-input" type="number" id="kc_${lecIdx}_${j}" value="${kcVal}" min="0" max="5">` +
+      `<button class="counter-btn" onclick="adjustKc(${lecIdx},${j},1)">+</button>`;
+    container.appendChild(item);
+    item.querySelector('.kc-input').addEventListener('input', updateSummary);
+  }
+}
+
+function adjustSeg(lecIdx, delta) {
+  const oldCount = parseInt(document.getElementById(`seg_${lecIdx}`)?.value) || 1;
+  const savedKcs = Array.from({ length: oldCount }, (_, j) => {
+    const el = document.getElementById(`kc_${lecIdx}_${j + 1}`);
+    return el ? (parseInt(el.value) || 0) : 1;
+  });
+  adjust(`seg_${lecIdx}`, delta);
+  const newCount = parseInt(document.getElementById(`seg_${lecIdx}`)?.value) || 1;
+  renderKcRows(lecIdx, newCount, savedKcs);
+}
+
+function adjustKc(lecIdx, segIdx, delta) { adjust(`kc_${lecIdx}_${segIdx}`, delta); }
+
+// ── Summary pills ─────────────────────────────────────────────────
+function updateSummary() {
+  const s        = document.getElementById('summary');
+  const lectures = parseInt(document.getElementById('lectures').value) || 0;
+  const segCounts = Array.from({ length: lectures }, (_, i) =>
+    parseInt(document.getElementById(`seg_${i + 1}`)?.value) || 3
+  );
+  const totalSegs   = segCounts.reduce((a, b) => a + b, 0);
+  const allSegsSame = segCounts.length > 0 && segCounts.every(v => v === segCounts[0]);
+  const segLabel    = allSegsSame
+    ? `${segCounts[0]} seg${segCounts[0] !== 1 ? 's' : ''}/lecture`
+    : `${totalSegs} segs total`;
+
+  let totalKcs = 0;
+  for (let i = 0; i < lectures; i++) {
+    for (let j = 0; j < segCounts[i]; j++) {
+      const el = document.getElementById(`kc_${i + 1}_${j + 1}`);
+      totalKcs += el ? (parseInt(el.value) || 0) : 1;
+    }
+  }
+  const kcLabel = totalKcs > 0 ? `${totalKcs} KC${totalKcs !== 1 ? 's' : ''} total` : '';
+
+  const hasRecit    = document.getElementById('hasRecitations').checked;
+  const recitations = parseInt(document.getElementById('recitations').value) || 0;
+  const hasAssign   = document.getElementById('hasAssignments').checked;
+  const assignments = parseInt(document.getElementById('assignments').value) || 0;
+
+  const pills = [
+    `<span class="pill pill-red"  style="animation-delay:0s"   >${lectures} lecture${lectures !== 1 ? 's' : ''}</span>`,
+    `<span class="pill pill-red"  style="animation-delay:.05s" >${segLabel}</span>`,
+    kcLabel    ? `<span class="pill pill-blue"   style="animation-delay:.10s">${kcLabel}</span>` : '',
+    hasRecit   ? `<span class="pill pill-purple" style="animation-delay:.15s">${recitations} recitation${recitations !== 1 ? 's' : ''}</span>` : '',
+    hasAssign  ? `<span class="pill pill-orange" style="animation-delay:.20s">${assignments} assignment${assignments !== 1 ? 's' : ''}</span>` : '',
+  ].filter(Boolean).join('');
+
+  if (s.innerHTML !== pills) s.innerHTML = pills;
   s.classList.add('show');
 }
 
-// Init
+// ── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Stagger card entrance animations
+  document.querySelectorAll('.card').forEach((card, i) => {
+    card.style.animationDelay = `${0.12 + i * 0.1}s`;
+  });
+
+  renderLectureGroups();
   updateSummary();
-  document.querySelectorAll('.counter-val').forEach(el => el.addEventListener('input', updateSummary));
+
+  // Wire counters that aren't inside lecture groups
+  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input)').forEach(el =>
+    el.addEventListener('input', updateSummary)
+  );
+
+  // Wire lectures input directly (typed value)
+  document.getElementById('lectures').addEventListener('input', () => {
+    renderLectureGroups();
+    updateSummary();
+  });
 });
 
-// ── Generate ──────────────────────────────────────────────────────
+// ── Cycling status messages ───────────────────────────────────────
+const STATUS_MSGS = [
+  'Generating cover page…',
+  'Building lecture sections…',
+  'Assembling knowledge checks…',
+  'Adding recitations & assignments…',
+  'Applying MIT styling…',
+  'Packaging document…',
+  'Almost there…',
+];
+let _msgInterval = null;
+
+function startStatusCycle(textEl) {
+  let idx = 0;
+  textEl.textContent = STATUS_MSGS[0];
+  _msgInterval = setInterval(() => {
+    idx = Math.min(idx + 1, STATUS_MSGS.length - 1);
+    textEl.textContent = STATUS_MSGS[idx];
+  }, 900);
+}
+function stopStatusCycle() { clearInterval(_msgInterval); _msgInterval = null; }
+
+// ── Generate ─────────────────────────────────────────────────────
 async function generate() {
-  const btn = document.querySelector('.btn-generate');
-  const statusEl = document.getElementById('status');
+  const btn        = document.querySelector('.btn-generate');
+  const statusEl   = document.getElementById('status');
   const statusText = document.getElementById('statusText');
 
-  btn.disabled = true;
-  statusEl.classList.add('show');
-  statusText.textContent = 'Building your template…';
-
+  // Snapshot config before any await (race-condition safety)
+  const numLectures = parseInt(document.getElementById('lectures').value) || 3;
   const config = {
-    modNum:        document.getElementById('modNum').value.trim()     || 'N',
-    modTitle:      document.getElementById('modTitle').value.trim()   || 'Module Title',
-    authors:       document.getElementById('modAuthors').value.trim() || '[Author name]',
-    tas:           document.getElementById('modTAs').value.trim()     || '[TA name]',
-    time:          document.getElementById('modTime').value.trim()    || '[Estimated time]',
-    prereqs:       document.getElementById('modPrereqs').value.trim() || '[Prerequisites]',
-    lectures:      parseInt(document.getElementById('lectures').value)    || 3,
-    segments:      parseInt(document.getElementById('segments').value)    || 3,
-    kcs:           parseInt(document.getElementById('kcs').value)         || 1,
+    modNum:    document.getElementById('modNum').value.trim()     || 'N',
+    modTitle:  document.getElementById('modTitle').value.trim()   || 'Module Title',
+    authors:   document.getElementById('modAuthors').value.trim() || '[Author name]',
+    tas:       document.getElementById('modTAs').value.trim()     || '[TA name]',
+    lectures:  numLectures,
+    segmentsPerLecture: Array.from({ length: numLectures }, (_, i) => {
+      const v = parseInt(document.getElementById(`seg_${i + 1}`)?.value);
+      return v >= 1 ? v : 3;
+    }),
+    kcsPerSegment: Array.from({ length: numLectures }, (_, i) => {
+      const numSegs = parseInt(document.getElementById(`seg_${i + 1}`)?.value) || 3;
+      return Array.from({ length: numSegs }, (_, j) => {
+        const el = document.getElementById(`kc_${i + 1}_${j + 1}`);
+        const v  = parseInt(el?.value);
+        return isNaN(v) ? 1 : Math.max(0, v);
+      });
+    }),
     hasRecit:      document.getElementById('hasRecitations').checked,
     recitations:   parseInt(document.getElementById('recitations').value) || 1,
     recitSegs:     parseInt(document.getElementById('recitSegs').value)   || 1,
@@ -757,13 +956,16 @@ async function generate() {
     inclProdNotes: document.getElementById('inclProdNotes').checked,
   };
 
-  try {
-    statusText.textContent = 'Assembling sections…';
+  btn.disabled = true;
+  btn.classList.add('loading');
+  statusEl.classList.add('show');
+  startStatusCycle(statusText);
 
+  try {
     const response = await fetch('/generate', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config),
+      body:    JSON.stringify(config),
     });
 
     if (!response.ok) {
@@ -771,23 +973,34 @@ async function generate() {
       throw new Error(err.error || 'Server error');
     }
 
+    stopStatusCycle();
     statusText.textContent = 'Downloading…';
-    const blob = await response.blob();
+
+    const blob  = await response.blob();
     const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.docx`;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fname;
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement('a');
+    a.href = url; a.download = fname;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     statusEl.classList.remove('show');
-    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.classList.add('success');
+    btn.innerHTML = `<span class="btn-icon">✓</span> Template Ready!`;
+    setTimeout(() => {
+      btn.classList.remove('success');
+      btn.innerHTML = `<span class="btn-icon">⬇</span> Generate &amp; Download Template`;
+      btn.disabled = false;
+    }, 2600);
+
   } catch (e) {
-    statusText.textContent = '⚠ Error: ' + e.message;
+    stopStatusCycle();
+    statusText.textContent = '⚠ ' + e.message;
     console.error(e);
+    btn.classList.remove('loading');
     btn.disabled = false;
   }
 }
