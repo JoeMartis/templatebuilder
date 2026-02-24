@@ -766,10 +766,9 @@ async function generate() {
     statusText.textContent = 'Assembling sections…';
     await new Promise(r => setTimeout(r, 30));
 
-    const buf = await buildDocx(config);
+    const blob = await buildDocx(config);
 
     statusText.textContent = 'Downloading…';
-    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.docx`;
     saveAs(blob, fname);
 
@@ -1361,7 +1360,7 @@ async function buildDocx(cfg) {
     }]
   });
 
-  return await Packer.toBuffer(doc);
+  return await Packer.toBlob(doc);
 }
 </script>
 </body>
