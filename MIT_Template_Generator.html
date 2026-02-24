@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIT Universal AI — Module Template Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --mit-red:    #A31F34;
+    --mit-dark:   #1a0a0e;
+    --mit-mid:    #3d1520;
+    --cream:      #faf7f4;
+    --warm-gray:  #e8e2dc;
+    --text:       #1c1410;
+    --muted:      #7a6e68;
+    --accent:     #c8a882;
+    --green:      #1A6B3C;
+    --purple:     #6B21A8;
+    --orange:     #92400E;
+    --blue:       #1D4ED8;
+    --border:     rgba(163,31,52,0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background texture ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 10% 20%, rgba(163,31,52,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(200,168,130,0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mit-red);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::after {
+    content: '';
+    flex: 1;
+    max-width: 48px;
+    height: 1px;
+    background: var(--mit-red);
+    opacity: 0.4;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.1;
+    color: var(--mit-dark);
+    margin-bottom: 14px;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--mit-red);
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 520px;
+  }
+
+  /* ── Section cards ── */
+  .card {
+    background: white;
+    border: 1px solid var(--warm-gray);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 20px;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 24px rgba(163,31,52,0.07); }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-label::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: currentColor;
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--mit-dark);
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  /* ── Form fields ── */
+  .field-group { margin-bottom: 20px; }
+  .field-group:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+  }
+  label span {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--warm-gray);
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--cream);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--mit-red);
+    box-shadow: 0 0 0 3px rgba(163,31,52,0.08);
+    background: white;
+  }
+  input[type="number"] { max-width: 100px; }
+  textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a6e68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  /* ── Counter control ── */
+  .counter-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .counter-item {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--warm-gray);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--cream);
+  }
+  .counter-item label {
+    margin: 0;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    background: white;
+    border-right: 1px solid var(--warm-gray);
+    height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  .counter-btn {
+    width: 36px;
+    height: 40px;
+    border: none;
+    background: var(--cream);
+    color: var(--mit-red);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    font-weight: 300;
+    line-height: 1;
+  }
+  .counter-btn:hover { background: rgba(163,31,52,0.08); }
+  .counter-val {
+    width: 36px;
+    height: 40px;
+    text-align: center;
+    border: none;
+    border-radius: 0;
+    background: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--mit-red);
+    border-left: 1px solid var(--warm-gray);
+    border-right: 1px solid var(--warm-gray);
+    max-width: 36px;
+    padding: 0;
+  }
+  .counter-val:focus { box-shadow: none; border-color: var(--warm-gray); }
+
+  /* ── Toggle ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--warm-gray);
+    border-radius: 24px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .toggle input:checked + .toggle-track { background: var(--mit-red); }
+  .toggle input:checked + .toggle-track::after { transform: translateX(20px); }
+  .toggle-label { font-size: 14px; color: var(--text); }
+  .toggle-sub { font-size: 12px; color: var(--muted); }
+
+  /* ── Two-col grid ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 480px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── Optional section ── */
+  .optional-section {
+    border: 1px dashed var(--warm-gray);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 16px;
+    background: rgba(250,247,244,0.6);
+  }
+  .optional-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
+  .optional-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .optional-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--warm-gray);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .optional-body {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--warm-gray);
+  }
+  .optional-body.open { display: block; }
+
+  /* ── Generate button ── */
+  .generate-wrap {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn-generate {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 48px;
+    background: var(--mit-red);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    box-shadow: 0 4px 20px rgba(163,31,52,0.3);
+    overflow: hidden;
+  }
+  .btn-generate::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  }
+  .btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(163,31,52,0.4);
+    background: #8a1a2b;
+  }
+  .btn-generate:active { transform: translateY(0); }
+  .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-icon { font-size: 20px; }
+
+  .generate-note {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+    max-width: 400px;
+  }
+
+  /* ── Progress / status ── */
+  #status {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: white;
+    border: 1px solid var(--warm-gray);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    width: 100%;
+    max-width: 460px;
+  }
+  #status.show { display: flex; }
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--warm-gray);
+    border-top-color: var(--mit-red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Summary pill ── */
+  #summary {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px 0 0;
+  }
+  #summary.show { display: flex; }
+  .pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .pill-red    { color: var(--mit-red); border-color: rgba(163,31,52,0.3); background: rgba(163,31,52,0.05); }
+  .pill-green  { color: var(--green);   border-color: rgba(26,107,60,0.3);  background: rgba(26,107,60,0.05); }
+  .pill-purple { color: var(--purple);  border-color: rgba(107,33,168,0.3); background: rgba(107,33,168,0.05); }
+  .pill-orange { color: var(--orange);  border-color: rgba(146,64,14,0.3);  background: rgba(146,64,14,0.05); }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-brand {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .footer-brand strong { color: var(--mit-red); }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: var(--warm-gray);
+    margin: 8px 0 24px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">MIT Open Learning</div>
+    <h1>Module Template<br><em>Generator</em></h1>
+    <p class="subtitle">Configure your module structure below and download a fully formatted Word template ready for faculty authoring.</p>
+  </header>
+
+  <!-- ── Module Info ── -->
+  <div class="card">
+    <div class="card-label">Step 1</div>
+    <div class="card-title">Module Information</div>
+    <div class="card-desc">Basic metadata that will appear on the cover page.</div>
+
+    <div class="grid-2">
+      <div class="field-group">
+        <label>Module Number <span>e.g., 3</span></label>
+        <input type="text" id="modNum" placeholder="3" value="">
+      </div>
+      <div class="field-group">
+        <label>Module Title <span>e.g., Supervised Learning</span></label>
+        <input type="text" id="modTitle" placeholder="Supervised Learning">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field-group">
+        <label>Author(s) <span>faculty name(s)</span></label>
+        <input type="text" id="modAuthors" placeholder="Prof. Jane Smith">
+      </div>
+      <div class="field-group">
+        <label>Teaching Assistant(s) <span>optional</span></label>
+        <input type="text" id="modTAs" placeholder="Alex Johnson">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field-group">
+        <label>Estimated Completion Time</label>
+        <input type="text" id="modTime" placeholder="e.g., 2.5 hours">
+      </div>
+      <div class="field-group">
+        <label>Prerequisites</label>
+        <input type="text" id="modPrereqs" placeholder="e.g., Basic Python">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Structure ── -->
+  <div class="card">
+    <div class="card-label">Step 2</div>
+    <div class="card-title">Module Structure</div>
+    <div class="card-desc">Set the number of each content type. The template will generate a section for each.</div>
+
+    <!-- Lectures -->
+    <div class="field-group">
+      <label>Lectures</label>
+      <div class="counter-row">
+        <div class="counter-item">
+          <label>Lectures</label>
+          <button class="counter-btn" onclick="adjust('lectures',-1)">−</button>
+          <input class="counter-val" type="number" id="lectures" value="3" min="1" max="10">
+          <button class="counter-btn" onclick="adjust('lectures',1)">+</button>
+        </div>
+        <div class="counter-item">
+          <label>Video segments per lecture</label>
+          <button class="counter-btn" onclick="adjust('segments',-1)">−</button>
+          <input class="counter-val" type="number" id="segments" value="3" min="1" max="6">
+          <button class="counter-btn" onclick="adjust('segments',1)">+</button>
+        </div>
+        <div class="counter-item">
+          <label>Knowledge checks per segment</label>
+          <button class="counter-btn" onclick="adjust('kcs',-1)">−</button>
+          <input class="counter-val" type="number" id="kcs" value="1" min="0" max="3">
+          <button class="counter-btn" onclick="adjust('kcs',1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Recitations -->
+    <div class="optional-section">
+      <div class="optional-header">
+        <div class="optional-title">
+          Recitations
+          <span class="optional-badge">optional</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="hasRecitations" onchange="toggleOptional('recitations', this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="optional-body" id="recitations-body">
+        <div class="counter-row">
+          <div class="counter-item">
+            <label>Recitation sections</label>
+            <button class="counter-btn" onclick="adjust('recitations',-1)">−</button>
+            <input class="counter-val" type="number" id="recitations" value="1" min="1" max="5">
+            <button class="counter-btn" onclick="adjust('recitations',1)">+</button>
+          </div>
+          <div class="counter-item">
+            <label>Video segments per recitation</label>
+            <button class="counter-btn" onclick="adjust('recitSegs',-1)">−</button>
+            <input class="counter-val" type="number" id="recitSegs" value="1" min="1" max="4">
+            <button class="counter-btn" onclick="adjust('recitSegs',1)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assignments -->
+    <div class="optional-section" style="margin-top:12px;">
+      <div class="optional-header">
+        <div class="optional-title">
+          Assignments
+          <span class="optional-badge">optional</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="hasAssignments" onchange="toggleOptional('assignments', this.checked)" checked>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="optional-body open" id="assignments-body">
+        <div class="counter-row">
+          <div class="counter-item">
+            <label>Assignments</label>
+            <button class="counter-btn" onclick="adjust('assignments',-1)">−</button>
+            <input class="counter-val" type="number" id="assignments" value="1" min="1" max="5">
+            <button class="counter-btn" onclick="adjust('assignments',1)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Options ── -->
+  <div class="card">
+    <div class="card-label">Step 3</div>
+    <div class="card-title">Options</div>
+    <div class="card-desc">Fine-tune what gets included in your template.</div>
+
+    <div class="field-group">
+      <label class="toggle-row" for="inclTOC">
+        <label class="toggle">
+          <input type="checkbox" id="inclTOC" checked>
+          <span class="toggle-track"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Include Table of Contents page</div>
+          <div class="toggle-sub">Clickable TOC after cover — update field in Word to populate page numbers</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="field-group" style="margin-top:16px;">
+      <label class="toggle-row" for="inclInstr">
+        <label class="toggle">
+          <input type="checkbox" id="inclInstr" checked>
+          <span class="toggle-track"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Include instruction boxes</div>
+          <div class="toggle-sub">Yellow guidance boxes for authors — remove before submitting</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="field-group" style="margin-top:16px;">
+      <label class="toggle-row" for="inclProdNotes">
+        <label class="toggle">
+          <input type="checkbox" id="inclProdNotes" checked>
+          <span class="toggle-track"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Include Production Notes section</div>
+          <div class="toggle-sub">End-of-document notes field for special Open edX instructions</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── Generate ── -->
+  <div class="generate-wrap">
+
+    <div id="summary">
+      <!-- Pills injected by JS -->
+    </div>
+
+    <button class="btn-generate" onclick="generate()">
+      <span class="btn-icon">⬇</span>
+      Generate &amp; Download Template
+    </button>
+
+    <div id="status">
+      <div class="spinner"></div>
+      <span id="statusText">Building your template…</span>
+    </div>
+
+    <p class="generate-note">
+      Generates a .docx file that opens in Microsoft Word or Google Docs.<br>
+      After opening, right-click the Table of Contents and select <strong>Update Field</strong> to populate page numbers.
+    </p>
+  </div>
+
+  <footer>
+    <div class="footer-brand"><strong>MIT</strong> Universal AI — Office of Digital Learning</div>
+    <div class="footer-brand" style="font-size:9px;">Template Generator v1.0</div>
+  </footer>
+
+</div>
+
+<script>
+// ── Counter helpers ──────────────────────────────────────────────
+function adjust(id, delta) {
+  const el = document.getElementById(id);
+  const min = parseInt(el.min) || 0;
+  const max = parseInt(el.max) || 99;
+  el.value = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
+  updateSummary();
+}
+
+function toggleOptional(id, show) {
+  const body = document.getElementById(id + '-body');
+  if (show) body.classList.add('open');
+  else body.classList.remove('open');
+  updateSummary();
+}
+
+function updateSummary() {
+  const s = document.getElementById('summary');
+  const lectures   = parseInt(document.getElementById('lectures').value) || 0;
+  const segments   = parseInt(document.getElementById('segments').value) || 0;
+  const kcs        = parseInt(document.getElementById('kcs').value) || 0;
+  const hasRecit   = document.getElementById('hasRecitations').checked;
+  const recitations= parseInt(document.getElementById('recitations').value) || 0;
+  const hasAssign  = document.getElementById('hasAssignments').checked;
+  const assignments= parseInt(document.getElementById('assignments').value) || 0;
+
+  let pills = [
+    `<span class="pill pill-red">${lectures} lecture${lectures!==1?'s':''}</span>`,
+    `<span class="pill pill-red">${segments} segment${segments!==1?'s':''}/lecture</span>`,
+    kcs > 0 ? `<span class="pill pill-blue" style="color:var(--blue);border-color:rgba(29,78,216,0.3);background:rgba(29,78,216,0.05)">${kcs} KC${kcs!==1?'s':''}/segment</span>` : '',
+    hasRecit ? `<span class="pill pill-purple">${recitations} recitation${recitations!==1?'s':''}</span>` : '',
+    hasAssign ? `<span class="pill pill-orange">${assignments} assignment${assignments!==1?'s':''}</span>` : '',
+  ].filter(Boolean);
+  s.innerHTML = pills.join('');
+  s.classList.add('show');
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  updateSummary();
+  // keep summary live
+  document.querySelectorAll('.counter-val').forEach(el => el.addEventListener('input', updateSummary));
+});
+
+// ── DOCX generation ──────────────────────────────────────────────
+async function generate() {
+  const btn = document.querySelector('.btn-generate');
+  const statusEl = document.getElementById('status');
+  const statusText = document.getElementById('statusText');
+
+  btn.disabled = true;
+  statusEl.classList.add('show');
+  statusText.textContent = 'Building your template…';
+
+  await new Promise(r => setTimeout(r, 50)); // let UI update
+
+  try {
+    const config = {
+      modNum:       document.getElementById('modNum').value.trim()   || 'N',
+      modTitle:     document.getElementById('modTitle').value.trim() || 'Module Title',
+      authors:      document.getElementById('modAuthors').value.trim() || '[Author name]',
+      tas:          document.getElementById('modTAs').value.trim()   || '[TA name]',
+      time:         document.getElementById('modTime').value.trim()  || '[Estimated time]',
+      prereqs:      document.getElementById('modPrereqs').value.trim() || '[Prerequisites]',
+      lectures:     parseInt(document.getElementById('lectures').value)   || 3,
+      segments:     parseInt(document.getElementById('segments').value)   || 3,
+      kcs:          parseInt(document.getElementById('kcs').value)        || 1,
+      hasRecit:     document.getElementById('hasRecitations').checked,
+      recitations:  parseInt(document.getElementById('recitations').value) || 1,
+      recitSegs:    parseInt(document.getElementById('recitSegs').value)   || 1,
+      hasAssign:    document.getElementById('hasAssignments').checked,
+      assignments:  parseInt(document.getElementById('assignments').value) || 1,
+      inclTOC:      document.getElementById('inclTOC').checked,
+      inclInstr:    document.getElementById('inclInstr').checked,
+      inclProdNotes:document.getElementById('inclProdNotes').checked,
+    };
+
+    statusText.textContent = 'Assembling sections…';
+    await new Promise(r => setTimeout(r, 30));
+
+    const buf = await buildDocx(config);
+
+    statusText.textContent = 'Downloading…';
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.docx`;
+    saveAs(blob, fname);
+
+    statusEl.classList.remove('show');
+    btn.disabled = false;
+  } catch(e) {
+    statusText.textContent = '⚠ Error: ' + e.message;
+    console.error(e);
+    btn.disabled = false;
+  }
+}
+
+// ── Build the docx ───────────────────────────────────────────────
+async function buildDocx(cfg) {
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    HeadingLevel, AlignmentType, LevelFormat, BorderStyle, WidthType,
+    ShadingType, PageBreak, TableOfContents, Footer, PageNumber
+  } = docx;
+
+  // Colors
+  const MIT_RED   = "A31F34";
+  const DARK      = "2D2D2D";
+  const MED       = "666666";
+  const LIGHT     = "F5F5F5";
+  const BORD      = "CCCCCC";
+  const BLUE_BG   = "E8F0F8";
+  const GREEN_BG  = "E8F5E9";
+  const YELLOW_BG = "FFF8E1";
+  const PURPLE_BG = "F3E5F5";
+  const ORANGE_BG = "FFF3E0";
+  const GREEN_H   = "1A6B3C";
+  const PURPLE_H  = "6B21A8";
+  const ORANGE_H  = "92400E";
+  const BLUE_H    = "1D4ED8";
+
+  // ── Primitives ──
+  const sp = (pts=120) => new Paragraph({ spacing:{before:pts,after:0}, children:[] });
+  const pageBreak = () => new Paragraph({ spacing:{before:360,after:0}, children:[new PageBreak()] });
+  const rule = (color="DDDDDD", sz=6) => new Paragraph({
+    spacing:{before:60,after:60},
+    border:{bottom:{style:BorderStyle.SINGLE,size:sz,color,space:1}},
+    children:[]
+  });
+  const txt = (text, opts={}) => new TextRun({ text, font:"Arial", size:20, color:DARK, ...opts });
+  const body = (text, opts={}) => new Paragraph({ spacing:{before:60,after:100},
+    children:[txt(text,opts)] });
+
+  // ── Numbering setup ──
+  let bIdx = 0;
+  const bRefs = [];
+  const makeBRef = () => { const r = `b${bIdx++}`; bRefs.push(r); return r; };
+
+  // Pre-allocate refs
+  const bGoals   = makeBRef();
+  const bLecObj  = makeBRef();
+  const bLecKT   = makeBRef();
+  const bRecit   = makeBRef();
+  const bModKT   = makeBRef();
+  const bProd    = makeBRef();
+
+  // ── Field box ──
+  function fieldBox(label, placeholder, shade=LIGHT, hint=null) {
+    const b = {style:BorderStyle.SINGLE,size:1,color:BORD};
+    const borders = {top:b,bottom:b,left:b,right:b};
+    const kids = [
+      new Paragraph({spacing:{before:0,after:50}, children:[txt(label,{bold:true})]}),
+      new Paragraph({spacing:{before:0,after:hint?60:0}, children:[txt(placeholder,{color:"999999",italics:true})]}),
+    ];
+    if (hint) kids.push(new Paragraph({spacing:{before:0,after:0},
+      children:[txt(`💡 ${hint}`,{size:18,color:"888888"})]}));
+    return boxWrap(kids, shade, borders);
+  }
+
+  function bigFieldBox(label, lines, shade=LIGHT, hint=null) {
+    const b = {style:BorderStyle.SINGLE,size:1,color:BORD};
+    const borders = {top:b,bottom:b,left:b,right:b};
+    const kids = [
+      new Paragraph({spacing:{before:0,after:60}, children:[txt(label,{bold:true})]}),
+      ...lines.map(line => new Paragraph({spacing:{before:0,after:40},
+        children:[txt(line,{color:"999999",italics:true})]})),
+    ];
+    if (hint) { kids.push(sp(60)); kids.push(new Paragraph({spacing:{before:0,after:0},
+      children:[txt(`💡 ${hint}`,{size:18,color:"888888"})]})); }
+    return boxWrap(kids, shade, borders);
+  }
+
+  function boxWrap(kids, shade, borders) {
+    return new Table({
+      width:{size:9360,type:WidthType.DXA}, columnWidths:[9360],
+      rows:[new TableRow({ children:[new TableCell({
+        borders, width:{size:9360,type:WidthType.DXA},
+        shading:{fill:shade,type:ShadingType.CLEAR},
+        margins:{top:120,bottom:120,left:180,right:180},
+        children:kids
+      })]})]
+    });
+  }
+
+  function noteBox(text) {
+    const b = {style:BorderStyle.SINGLE,size:4,color:"FFCC02"};
+    const borders = {top:b,bottom:b,left:b,right:b};
+    return new Table({
+      width:{size:9360,type:WidthType.DXA}, columnWidths:[9360],
+      rows:[new TableRow({ children:[new TableCell({
+        borders, width:{size:9360,type:WidthType.DXA},
+        shading:{fill:YELLOW_BG,type:ShadingType.CLEAR},
+        margins:{top:100,bottom:100,left:180,right:180},
+        children:[new Paragraph({ children:[
+          txt("📋 INSTRUCTIONS:  ",{bold:true,size:18,color:"7B5200"}),
+          txt(text,{size:18,color:"7B5200"})
+        ]})]
+      })]})]
+    });
+  }
+
+  function bullet(text, ref) {
+    return new Paragraph({ numbering:{reference:ref,level:0}, spacing:{before:60,after:60},
+      children:[txt(text)] });
+  }
+
+  function h1(text) {
+    return new Paragraph({ heading:HeadingLevel.HEADING_1, children:[new TextRun({text,font:"Arial"})] });
+  }
+  function h2(text) {
+    return new Paragraph({ heading:HeadingLevel.HEADING_2, children:[new TextRun({text,font:"Arial"})] });
+  }
+  function h3(text) {
+    return new Paragraph({ heading:HeadingLevel.HEADING_3, children:[new TextRun({text,font:"Arial"})] });
+  }
+
+  // ── Knowledge Check ──
+  function knowledgeCheck(num) {
+    const b = {style:BorderStyle.SINGLE,size:2,color:"3B82F6"};
+    const borders = {top:b,bottom:b,left:b,right:b};
+    const mkLine = (t, bold=false) => new Paragraph({spacing:{before:0,after:50},
+      children:[txt(t,{bold,color:bold?DARK:"999999",italics:!bold})]});
+    return [
+      sp(120),
+      new Table({
+        width:{size:9360,type:WidthType.DXA}, columnWidths:[9360],
+        rows:[new TableRow({ children:[new TableCell({
+          borders, width:{size:9360,type:WidthType.DXA},
+          shading:{fill:"EFF6FF",type:ShadingType.CLEAR},
+          margins:{top:140,bottom:140,left:200,right:200},
+          children:[
+            new Paragraph({spacing:{before:0,after:80}, children:[
+              txt(`✓  KNOWLEDGE CHECK ${num}`,{bold:true,color:BLUE_H})
+            ]}),
+            mkLine("Question:",true),
+            new Paragraph({spacing:{before:0,after:120}, children:[
+              txt("Type your question here.",{color:"999999",italics:true})
+            ]}),
+            new Paragraph({spacing:{before:0,after:40}, children:[
+              txt("Type:  □ Multiple Choice (single)   □ Multiple Choice (multi)   □ True/False",{size:18,color:MED})
+            ]}),
+            new Paragraph({spacing:{before:80,after:40}, children:[
+              txt("Answer choices (mark correct with ★):",{bold:true})
+            ]}),
+            ...["A)","B)","C)","D)"].map(l => new Paragraph({spacing:{before:0,after:40},
+              children:[txt(`□  ${l} `,{color:"999999",italics:true})]})),
+            new Paragraph({spacing:{before:80,after:40}, children:[
+              txt("Feedback — correct answer:",{bold:true})
+            ]}),
+            new Paragraph({spacing:{before:0,after:40}, children:[
+              txt("Explain why the correct answer is right.",{color:"999999",italics:true})
+            ]}),
+            new Paragraph({spacing:{before:60,after:40}, children:[
+              txt("Feedback — incorrect answer:",{bold:true})
+            ]}),
+            new Paragraph({spacing:{before:0,after:0}, children:[
+              txt("Guide the learner to reconsider; point to the relevant concept.",{color:"999999",italics:true})
+            ]}),
+          ]
+        })]})]
+      }),
+      sp(80),
+    ];
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // COVER PAGE
+  // ════════════════════════════════════════════════════════════
+  const cover = [
+    sp(1440),
+    new Paragraph({ spacing:{before:0,after:120}, children:[
+      txt("MIT Universal AI",{bold:true,size:60,color:MIT_RED})
+    ]}),
+    new Paragraph({ spacing:{before:0,after:60}, children:[
+      txt("Module Authoring Template",{size:36,color:DARK})
+    ]}),
+    new Paragraph({ spacing:{before:0,after:200}, children:[
+      txt(`Module ${cfg.modNum}: ${cfg.modTitle}`,{size:26,color:MED})
+    ]}),
+    rule(MIT_RED, 8),
+    sp(200),
+    fieldBox("Module", `Module ${cfg.modNum}: ${cfg.modTitle}`),
+    sp(80),
+    fieldBox("Author(s)", cfg.authors),
+    sp(80),
+    fieldBox("Teaching Assistant(s)", cfg.tas || "[TA name]"),
+    sp(80),
+    fieldBox("Estimated Completion Time", cfg.time || "[Estimated time]"),
+    sp(80),
+    fieldBox("Target Audience / Prerequisites", cfg.prereqs || "[Prerequisites]"),
+    sp(400),
+    ...(cfg.inclInstr ? [
+      new Paragraph({spacing:{before:0,after:80},
+        children:[txt("How to use this template",{bold:true})]}),
+      body("1. Fill in every gray field — replace italic placeholder text with your content."),
+      body("2. Yellow instruction boxes are guides — remove them before submitting."),
+      body(`3. This template includes ${cfg.lectures} lecture${cfg.lectures!==1?'s':''}, ${cfg.hasRecit?cfg.recitations+' recitation'+(cfg.recitations!==1?'s':''):'no recitations'}, and ${cfg.hasAssign?cfg.assignments+' assignment'+(cfg.assignments!==1?'s':''):'no assignments'}.`),
+      body("4. Submit completed template to your Production Manager for Open edX entry."),
+    ] : []),
+    pageBreak(),
+  ];
+
+  // ════════════════════════════════════════════════════════════
+  // TOC
+  // ════════════════════════════════════════════════════════════
+  const toc = cfg.inclTOC ? [
+    h1("Contents"),
+    new TableOfContents("Contents", {hyperlink:true, headingStyleRange:"1-3"}),
+    pageBreak(),
+  ] : [];
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 1: INTRODUCTION
+  // ════════════════════════════════════════════════════════════
+  const intro = [
+    h1("Section 1: Introduction"),
+    rule(MIT_RED),
+
+    h2("1.1  Module Overview"),
+    sp(60),
+    ...(cfg.inclInstr ? [noteBox("Write 2–4 sentences describing what this module is about, why it matters, and how it fits in the course arc."), sp(80)] : []),
+    bigFieldBox("Module Overview", [
+      "Write 2–4 sentences here.",
+      "",
+      `Example: In this module, you will explore the foundations of ${cfg.modTitle}. By the end, you will understand the key concepts and be prepared to apply them in practice.`,
+    ], BLUE_BG),
+    sp(160),
+
+    h2("1.2  Module Learning Goals"),
+    sp(60),
+    ...(cfg.inclInstr ? [noteBox("List 3–5 learning goals using action verbs (Bloom's Taxonomy): define, explain, apply, analyze, evaluate, design."), sp(80)] : []),
+    new Paragraph({spacing:{before:0,after:80},
+      children:[txt("By the end of this module, learners will be able to:",{bold:true})]}),
+    bullet("Learning goal 1 — [Action verb] + [concept] + [context or condition]", bGoals),
+    bullet("Learning goal 2", bGoals),
+    bullet("Learning goal 3", bGoals),
+    bullet("Learning goal 4 (optional)", bGoals),
+    bullet("Learning goal 5 (optional)", bGoals),
+    sp(200),
+    pageBreak(),
+  ];
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 2: LECTURES
+  // ════════════════════════════════════════════════════════════
+  const sectionNum = 2;
+  const lecturesSection = [
+    h1(`Section ${sectionNum}: Lectures`),
+    rule(GREEN_H),
+    sp(60),
+    ...(cfg.inclInstr ? [noteBox(`This module has ${cfg.lectures} lecture${cfg.lectures!==1?'s':''}. Each lecture below is structured identically — fill in each one.`), sp(80)] : []),
+  ];
+
+  for (let l = 1; l <= cfg.lectures; l++) {
+    lecturesSection.push(
+      h2(`Lecture ${l} of ${cfg.lectures}`),
+      sp(60),
+      fieldBox("Lecture Title", `e.g., Lecture ${l}: [Title]`, GREEN_BG),
+      sp(80),
+      fieldBox("Estimated Total Video Time", "e.g., 12 minutes across segments", GREEN_BG),
+      sp(160),
+
+      h3(`${sectionNum}.${l}.1  Lecture ${l} Overview`),
+      sp(60),
+      ...(cfg.inclInstr ? [noteBox("1–2 sentences previewing what this lecture covers. Shown to learners before they watch."), sp(80)] : []),
+      bigFieldBox("Lecture Overview", ["Type 1–2 sentences here."], GREEN_BG),
+      sp(120),
+
+      h3(`${sectionNum}.${l}.2  Lecture ${l} Learning Objectives`),
+      sp(60),
+      ...(cfg.inclInstr ? [noteBox("2–4 specific, measurable objectives scoped to this lecture. These map to the Knowledge Checks below."), sp(80)] : []),
+      new Paragraph({spacing:{before:0,after:80},
+        children:[txt("After this lecture, learners will be able to:",{bold:true})]}),
+      bullet("Objective 1", bLecObj),
+      bullet("Objective 2", bLecObj),
+      bullet("Objective 3", bLecObj),
+      sp(180),
+
+      h3(`${sectionNum}.${l}.3  Lecture ${l} Videos`),
+      sp(60),
+      ...(cfg.inclInstr ? [noteBox(`This lecture has ${cfg.segments} segment${cfg.segments!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check${cfg.kcs>1?'s':''} that follow.`), sp(80)] : []),
+    );
+
+    // Segments
+    for (let s = 1; s <= cfg.segments; s++) {
+      const kcTotal = cfg.kcs;
+      lecturesSection.push(
+        sp(80),
+        new Paragraph({spacing:{before:0,after:80},
+          children:[txt(`Video Segment ${s}`,{bold:true,size:22,color:MED})]}),
+        fieldBox("Segment Title", `e.g., ${l}.${s} [Segment title]`, GREEN_BG),
+        sp(80),
+        fieldBox("Target Duration", "e.g., 5–7 minutes", GREEN_BG),
+        sp(80),
+        bigFieldBox("Script / Content Outline", [
+          "Write your script or a detailed outline here.",
+          "",
+          "Suggested structure:",
+          "  • Hook / opening question",
+          "  • Core concept explanation",
+          "  • Example or analogy",
+          "  • Visual / slide notes (describe what should appear on screen)",
+          "  • Transition to next segment",
+        ], GREEN_BG, "Slides, diagrams, or code can be referenced here and attached separately."),
+      );
+      for (let k = 1; k <= kcTotal; k++) {
+        lecturesSection.push(...knowledgeCheck(k));
+      }
+      lecturesSection.push(sp(120));
+    }
+
+    // Lecture Summary
+    lecturesSection.push(
+      h3(`${sectionNum}.${l}.4  Lecture ${l} Summary`),
+      sp(60),
+      ...(cfg.inclInstr ? [noteBox("1–2 sentence recap followed by 3–5 key takeaways. Appears as a text block in Open edX after videos."), sp(80)] : []),
+      bigFieldBox("Lecture Summary", ["1–2 sentence wrap-up of what was covered and why it matters."], GREEN_BG),
+      sp(80),
+      new Paragraph({spacing:{before:0,after:80},
+        children:[txt("Key Takeaways",{bold:true})]}),
+      bullet("Key takeaway 1", bLecKT),
+      bullet("Key takeaway 2", bLecKT),
+      bullet("Key takeaway 3", bLecKT),
+      bullet("Key takeaway 4 (optional)", bLecKT),
+      sp(200),
+    );
+
+    if (l < cfg.lectures) lecturesSection.push(pageBreak());
+  }
+  lecturesSection.push(pageBreak());
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 3: RECITATIONS (optional)
+  // ════════════════════════════════════════════════════════════
+  const recitSection = [];
+  if (cfg.hasRecit) {
+    const rSec = sectionNum + 1;
+    recitSection.push(
+      h1(`Section ${rSec}: Recitations`),
+      rule(PURPLE_H),
+      sp(60),
+      ...(cfg.inclInstr ? [noteBox(`This module has ${cfg.recitations} recitation${cfg.recitations!==1?'s':''}. Fill in each section below.`), sp(80)] : []),
+    );
+
+    for (let r = 1; r <= cfg.recitations; r++) {
+      recitSection.push(
+        h2(`Recitation ${r} of ${cfg.recitations}`),
+        sp(120),
+
+        h3(`${rSec}.${r}.1  Recitation ${r} Overview`),
+        sp(60),
+        ...(cfg.inclInstr ? [noteBox("1–2 sentences describing the purpose of this recitation and how it connects to the lectures."), sp(80)] : []),
+        bigFieldBox("Recitation Overview", [
+          "1–2 sentences here.",
+          "Example: This recitation reinforces lecture concepts by walking through a worked example.",
+        ], PURPLE_BG),
+        sp(120),
+
+        h3(`${rSec}.${r}.2  Recitation ${r} Video(s)`),
+        sp(60),
+        ...(cfg.inclInstr ? [noteBox("Fill in a block for each video segment."), sp(80)] : []),
+      );
+
+      for (let s = 1; s <= cfg.recitSegs; s++) {
+        recitSection.push(
+          sp(80),
+          new Paragraph({spacing:{before:0,after:80}, children:[
+            txt(`Video Segment ${s}`,{bold:true,size:22,color:MED})
+          ]}),
+          fieldBox("Segment Title", `e.g., Recitation ${r}.${s} [Title]`, PURPLE_BG),
+          sp(80),
+          fieldBox("Estimated Duration", "e.g., 15 minutes", PURPLE_BG),
+          sp(80),
+          bigFieldBox("Script / Content Outline", [
+            "Detailed outline or script.",
+            "",
+            "  • Restate the problem or question",
+            "  • Walk through step by step",
+            "  • Highlight common mistakes",
+            "  • Summarize what was demonstrated",
+          ], PURPLE_BG),
+          sp(120),
+        );
+      }
+
+      recitSection.push(
+        h3(`${rSec}.${r}.3  Recitation ${r} Summary`),
+        sp(60),
+        bigFieldBox("Recitation Summary", [
+          "1–2 sentence wrap-up of what the recitation demonstrated.",
+        ], PURPLE_BG),
+        sp(200),
+      );
+      if (r < cfg.recitations) recitSection.push(pageBreak());
+    }
+    recitSection.push(pageBreak());
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 4: ASSIGNMENTS (optional)
+  // ════════════════════════════════════════════════════════════
+  const assignSection = [];
+  if (cfg.hasAssign) {
+    const aSec = sectionNum + (cfg.hasRecit ? 2 : 1);
+    assignSection.push(
+      h1(`Section ${aSec}: Assignments`),
+      rule(ORANGE_H),
+      sp(60),
+      ...(cfg.inclInstr ? [noteBox(`This module has ${cfg.assignments} assignment${cfg.assignments!==1?'s':''}. Fill in each section below.`), sp(80)] : []),
+    );
+
+    for (let a = 1; a <= cfg.assignments; a++) {
+      assignSection.push(
+        h2(`Assignment ${a} of ${cfg.assignments}`),
+        sp(120),
+
+        h3(`${aSec}.${a}.1  Assignment ${a} Overview`),
+        sp(60),
+        ...(cfg.inclInstr ? [noteBox("1–2 sentences explaining what the assignment asks learners to do and how it connects to the module learning goals."), sp(80)] : []),
+        bigFieldBox("Assignment Overview", [
+          "Write 1–2 sentences describing the assignment.",
+          "Example: In this assignment, you will apply the concepts from this module to a real dataset.",
+        ], ORANGE_BG),
+        sp(120),
+
+        h3(`${aSec}.${a}.2  Graded Assignment ${a}`),
+        sp(60),
+        ...(cfg.inclInstr ? [noteBox("Provide full assignment content. Include all questions, prompts, or problem statements. Attach code notebooks, data files, or rubrics separately."), sp(80)] : []),
+        fieldBox("Assignment Title", `e.g., Assignment ${a}: [Title]`, ORANGE_BG),
+        sp(80),
+        fieldBox("Point Value / Weight", "e.g., 20 points (10% of final grade)", ORANGE_BG),
+        sp(80),
+        fieldBox("Estimated Completion Time", "e.g., 2–3 hours", ORANGE_BG),
+        sp(80),
+        bigFieldBox("Instructions to Learners", [
+          "Write the instructions exactly as learners will see them.",
+          "",
+          "Example:",
+          "  1. Load and explore the provided dataset.",
+          "  2. Build and evaluate a model.",
+          "  3. Submit your code and a short written analysis.",
+        ], ORANGE_BG, "Attach rubric, starter code, or data files separately and note filenames below."),
+        sp(80),
+        fieldBox("Attached Files (list filenames)", "e.g., data.csv, starter_code.ipynb, rubric.pdf", ORANGE_BG),
+        sp(80),
+        bigFieldBox("Grading Rubric / Answer Key (Production Use Only — Not Shown to Learners)", [
+          "Provide the rubric or answer key here.",
+          "  • Criterion 1: [X pts] Description",
+          "  • Criterion 2: [X pts] Description",
+          "  • Criterion 3: [X pts] Description",
+        ], LIGHT),
+        sp(120),
+
+        h3(`${aSec}.${a}.3  Assignment ${a} Summary`),
+        sp(60),
+        bigFieldBox("Assignment Summary", [
+          "1–2 sentences shown to learners after submission, recapping what the assignment assessed.",
+        ], ORANGE_BG),
+        sp(200),
+      );
+      if (a < cfg.assignments) assignSection.push(pageBreak());
+    }
+    assignSection.push(pageBreak());
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 5: CONCLUSION
+  // ════════════════════════════════════════════════════════════
+  const concludeNum = sectionNum + (cfg.hasRecit?1:0) + (cfg.hasAssign?1:0) + 1;
+  const conclusion = [
+    h1(`Section ${concludeNum}: Conclusion`),
+    rule(GREEN_H),
+    sp(120),
+
+    h2(`${concludeNum}.1  Module Summary`),
+    sp(60),
+    ...(cfg.inclInstr ? [noteBox("Write 2–3 sentences recapping the entire module — what was covered, what was practiced, and what learners are now equipped to do."), sp(80)] : []),
+    bigFieldBox("Module Summary", [
+      "Write your 2–3 sentence module summary here.",
+      "",
+      `Example: In this module, you explored the fundamentals of ${cfg.modTitle}. Through lectures, practice, and hands-on work, you built both conceptual understanding and practical skills.`,
+    ], GREEN_BG),
+    sp(120),
+
+    h3("Module Key Takeaways"),
+    sp(60),
+    ...(cfg.inclInstr ? [noteBox("4–6 key things a learner should walk away knowing from the entire module."), sp(80)] : []),
+    bullet("Key takeaway 1", bModKT),
+    bullet("Key takeaway 2", bModKT),
+    bullet("Key takeaway 3", bModKT),
+    bullet("Key takeaway 4", bModKT),
+    bullet("Key takeaway 5 (optional)", bModKT),
+    sp(160),
+
+    h2(`${concludeNum}.2  What's Next (Optional)`),
+    sp(60),
+    bigFieldBox("Preview of Next Module", [
+      "1–2 sentences previewing the next module or topic.",
+      "Example: In the next module, you will build on these foundations to explore more advanced techniques.",
+    ], LIGHT),
+    sp(200),
+  ];
+
+  if (cfg.inclProdNotes) {
+    conclusion.push(
+      rule(),
+      sp(80),
+      h2("Production Notes (for Production Manager)"),
+      sp(60),
+      bigFieldBox("Notes to Production Manager", [
+        "Any special instructions, accessibility notes, or flagged items for Open edX entry.",
+        "",
+        "Examples:",
+        "  • Video segment references a downloadable file — attached.",
+        "  • Knowledge Check requires a diagram — see attached image.",
+        "  • Assignment rubric is confidential — do not publish to learners.",
+      ], LIGHT),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // ASSEMBLE
+  // ════════════════════════════════════════════════════════════
+  const numberingConfig = bRefs.map(ref => ({
+    reference: ref,
+    levels: [{ level:0, format:LevelFormat.BULLET, text:"\u2022",
+      alignment:AlignmentType.LEFT,
+      style:{ paragraph:{ indent:{ left:720, hanging:360 } } } }]
+  }));
+
+  const doc = new Document({
+    numbering: { config: numberingConfig },
+    styles: {
+      default: { document: { run: { font:"Arial", size:20, color:DARK } } },
+      paragraphStyles: [
+        { id:"Heading1", name:"Heading 1", basedOn:"Normal", next:"Normal", quickFormat:true,
+          run:{size:38,bold:true,font:"Arial",color:MIT_RED},
+          paragraph:{spacing:{before:480,after:120},outlineLevel:0} },
+        { id:"Heading2", name:"Heading 2", basedOn:"Normal", next:"Normal", quickFormat:true,
+          run:{size:26,bold:true,font:"Arial",color:DARK},
+          paragraph:{spacing:{before:320,after:80},outlineLevel:1} },
+        { id:"Heading3", name:"Heading 3", basedOn:"Normal", next:"Normal", quickFormat:true,
+          run:{size:20,bold:true,font:"Arial",color:MED},
+          paragraph:{spacing:{before:200,after:60},outlineLevel:2} },
+      ]
+    },
+    sections:[{
+      properties:{
+        page:{
+          size:{width:12240,height:15840},
+          margin:{top:1080,right:1080,bottom:1080,left:1080}
+        }
+      },
+      footers:{
+        default: new Footer({ children:[
+          new Paragraph({
+            alignment:AlignmentType.CENTER,
+            children:[
+              new TextRun({text:`MIT Universal AI  |  Module ${cfg.modNum}: ${cfg.modTitle}  |  Page `,size:16,font:"Arial",color:"999999"}),
+              new TextRun({children:[PageNumber.CURRENT],size:16,font:"Arial",color:"999999"}),
+            ]
+          })
+        ]})
+      },
+      children:[
+        ...cover,
+        ...toc,
+        ...intro,
+        ...lecturesSection,
+        ...recitSection,
+        ...assignSection,
+        ...conclusion,
+      ]
+    }]
+  });
+
+  return await Packer.toBuffer(doc);
+}
+</script>
+</body>
+</html>
