@@ -347,6 +347,46 @@
   }
   .optional-body.open { display: block; }
 
+  /* ── Format picker ── */
+  .format-picker {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .format-option {
+    display: none;
+  }
+  .format-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 18px;
+    border: 1.5px solid var(--warm-gray);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    background: white;
+    user-select: none;
+  }
+  .format-option:checked + .format-label {
+    border-color: var(--mit-red);
+    color: var(--mit-red);
+    background: rgba(163,31,52,0.05);
+  }
+  .format-picker-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
   /* ── Generate button ── */
   .generate-wrap {
     margin-top: 40px;
@@ -633,7 +673,7 @@
     <div class="card-desc">Fine-tune what gets included in your template.</div>
 
     <div class="field-group">
-      <label class="toggle-row" for="inclTOC">
+      <div class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="inclTOC" checked>
           <span class="toggle-track"></span>
@@ -642,11 +682,11 @@
           <div class="toggle-label">Include Table of Contents page</div>
           <div class="toggle-sub">Clickable TOC after cover — update field in Word to populate page numbers</div>
         </div>
-      </label>
+      </div>
     </div>
 
     <div class="field-group" style="margin-top:16px;">
-      <label class="toggle-row" for="inclInstr">
+      <div class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="inclInstr" checked>
           <span class="toggle-track"></span>
@@ -655,11 +695,11 @@
           <div class="toggle-label">Include instruction boxes</div>
           <div class="toggle-sub">Yellow guidance boxes for authors — remove before submitting</div>
         </div>
-      </label>
+      </div>
     </div>
 
     <div class="field-group" style="margin-top:16px;">
-      <label class="toggle-row" for="inclProdNotes">
+      <div class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="inclProdNotes" checked>
           <span class="toggle-track"></span>
@@ -668,7 +708,7 @@
           <div class="toggle-label">Include Production Notes section</div>
           <div class="toggle-sub">End-of-document notes field for special Open edX instructions</div>
         </div>
-      </label>
+      </div>
     </div>
   </div>
 
@@ -677,6 +717,16 @@
 
     <div id="summary">
       <!-- Pills injected by JS -->
+    </div>
+
+    <div>
+      <div class="format-picker-label">Export format</div>
+      <div class="format-picker">
+        <input type="radio" class="format-option" name="exportFormat" id="fmt-docx" value="docx" checked>
+        <label class="format-label" for="fmt-docx">📄 Word (.docx)</label>
+        <input type="radio" class="format-option" name="exportFormat" id="fmt-txt" value="txt">
+        <label class="format-label" for="fmt-txt">📃 Plain Text (.txt)</label>
+      </div>
     </div>
 
     <button class="btn-generate" onclick="generate()">
@@ -917,16 +967,23 @@ async function generate() {
 
   await new Promise(r => setTimeout(r, 50)); // let UI repaint
 
+  const format = document.querySelector('input[name="exportFormat"]:checked')?.value || 'docx';
+
   try {
 
     statusText.textContent = 'Assembling sections…';
     await new Promise(r => setTimeout(r, 30));
 
-    const blob = await buildDocx(config);
-
-    statusText.textContent = 'Downloading…';
-    const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.docx`;
-    saveAs(blob, fname);
+    if (format === 'txt') {
+      const text = buildTxt(config);
+      const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+      const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.txt`;
+      saveAs(blob, fname);
+    } else {
+      const blob = await buildDocx(config);
+      const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.docx`;
+      saveAs(blob, fname);
+    }
 
     statusEl.classList.remove('show');
     btn.disabled = false;
@@ -935,6 +992,176 @@ async function generate() {
     console.error(e);
     btn.disabled = false;
   }
+}
+
+// ── Build plain text ─────────────────────────────────────────────
+function buildTxt(cfg) {
+  const divider  = (ch='─', len=72) => ch.repeat(len);
+  const h1       = t => `\n${divider('═')}\n  ${t.toUpperCase()}\n${divider('═')}\n`;
+  const h2       = t => `\n${divider()}\n  ${t}\n${divider()}\n`;
+  const h3       = t => `\n  ── ${t} ──\n`;
+  const field    = (label, hint) => `  ${label}:\n  ${'_'.repeat(60)}\n  [${hint}]\n`;
+  const bigField = (label, lines) => `  ${label}:\n  ${'_'.repeat(60)}\n  ${lines.join('\n  ')}\n`;
+  const bullets  = items => items.map(s => `    • ${s}`).join('\n') + '\n';
+  const instr    = text => cfg.inclInstr ? `  [INSTRUCTIONS: ${text}]\n` : '';
+
+  let out = '';
+
+  // Cover
+  out += `MIT UNIVERSAL AI — MODULE AUTHORING TEMPLATE\n`;
+  out += `Module ${cfg.modNum}: ${cfg.modTitle}\n`;
+  out += divider() + '\n';
+  out += `Author(s):                ${cfg.authors}\n`;
+  out += `Teaching Assistant(s):    ${cfg.tas || '[TA name]'}\n`;
+  out += `Estimated Completion Time:${cfg.time || '[Estimated time]'}\n`;
+  out += `Prerequisites:            ${cfg.prereqs || '[Prerequisites]'}\n`;
+  out += divider() + '\n';
+
+  // Section 1: Introduction
+  out += h1('Section 1: Introduction');
+  out += h2('1.1  Module Overview');
+  out += instr('Write 2–4 sentences describing what this module is about, why it matters, and how it fits in the course arc.');
+  out += bigField('Module Overview', [
+    'Write 2–4 sentences here.',
+    '',
+    `Example: In this module, you will explore the foundations of ${cfg.modTitle}.`,
+  ]);
+
+  out += h2('1.2  Module Learning Goals');
+  out += instr('List 3–5 learning goals using action verbs (Bloom\'s Taxonomy).');
+  out += '  By the end of this module, learners will be able to:\n';
+  out += bullets([
+    'Learning goal 1 — [Action verb] + [concept] + [context or condition]',
+    'Learning goal 2',
+    'Learning goal 3',
+    'Learning goal 4 (optional)',
+    'Learning goal 5 (optional)',
+  ]);
+
+  // Section 2: Lectures
+  out += h1('Section 2: Lectures');
+  out += instr(`This module has ${cfg.lectures} lecture${cfg.lectures!==1?'s':''}. Each lecture below is structured identically — fill in each one.`);
+
+  for (let l = 1; l <= cfg.lectures; l++) {
+    const numSegs = (cfg.segmentsPerLecture||[])[l-1] || 3;
+    const numKcs  = (cfg.kcsPerLecture||[])[l-1] != null ? (cfg.kcsPerLecture||[])[l-1] : 1;
+    out += h2(`Lecture ${l} of ${cfg.lectures}`);
+    out += field('Lecture Title', `e.g., Lecture ${l}: [Title]`);
+    out += field('Estimated Total Video Time', 'e.g., 12 minutes across segments');
+    out += h3(`Lecture ${l} Overview`);
+    out += bigField('Lecture Overview', ['Type 1–2 sentences here.']);
+    out += h3(`Lecture ${l} Learning Objectives`);
+    out += '  After this lecture, learners will be able to:\n';
+    out += bullets(['Objective 1', 'Objective 2', 'Objective 3']);
+
+    out += h3(`Lecture ${l} Videos`);
+    for (let s = 1; s <= numSegs; s++) {
+      out += `\n  Lecture ${l}.${s}\n`;
+      out += field('Segment Title', `e.g., ${l}.${s} [Segment title]`);
+      out += field('Target Duration', 'e.g., 5–7 minutes');
+      out += bigField('Script / Content Outline', [
+        'Write your script or a detailed outline here.',
+        '',
+        'Suggested structure:',
+        '  • Hook / opening question',
+        '  • Core concept explanation',
+        '  • Example or analogy',
+        '  • Visual / slide notes',
+        '  • Transition to next segment',
+      ]);
+      for (let k = 1; k <= numKcs; k++) {
+        out += `\n  KNOWLEDGE CHECK ${k}\n`;
+        out += field('Question', 'Type your question here.');
+        out += '  Type:  □ Multiple Choice (single)   □ Multiple Choice (multi)   □ True/False\n';
+        out += '  Answer choices (mark correct with ★):\n';
+        out += bullets(['A) [Choice]', 'B) [Choice]', 'C) [Choice]', 'D) [Choice]']);
+        out += field('Feedback — correct answer', 'Explain why the correct answer is right.');
+        out += field('Feedback — incorrect answer', 'Guide the learner to reconsider.');
+      }
+    }
+
+    out += h3(`Lecture ${l} Summary`);
+    out += bigField('Lecture Summary', ['1–2 sentence wrap-up of what was covered.']);
+    out += '\n  Key Takeaways:\n';
+    out += bullets(['Key takeaway 1', 'Key takeaway 2', 'Key takeaway 3', 'Key takeaway 4 (optional)']);
+  }
+
+  // Section 3: Recitations (optional)
+  if (cfg.hasRecit) {
+    const rSec = 3;
+    out += h1(`Section ${rSec}: Recitations`);
+    for (let r = 1; r <= cfg.recitations; r++) {
+      out += h2(`Recitation ${r} of ${cfg.recitations}`);
+      out += bigField('Recitation Overview', [
+        '1–2 sentences here.',
+        'Example: This recitation reinforces lecture concepts by walking through a worked example.',
+      ]);
+      for (let s = 1; s <= cfg.recitSegs; s++) {
+        out += `\n  Recitation ${r}.${s}\n`;
+        out += field('Segment Title', `e.g., Recitation ${r}.${s} [Title]`);
+        out += field('Estimated Duration', 'e.g., 15 minutes');
+        out += bigField('Script / Content Outline', [
+          'Detailed outline or script.',
+          '  • Restate the problem or question',
+          '  • Walk through step by step',
+          '  • Highlight common mistakes',
+          '  • Summarize what was demonstrated',
+        ]);
+      }
+      out += bigField('Recitation Summary', ['1–2 sentence wrap-up.']);
+    }
+  }
+
+  // Assignments section
+  const aSec = 2 + (cfg.hasRecit ? 2 : 1);
+  out += h1(`Section ${aSec}: Assignments`);
+  for (let a = 1; a <= cfg.assignments; a++) {
+    const numParts    = (cfg.partsPerAssignment  || [])[a-1] || 2;
+    const numProblems = (cfg.problemsPerPart      || [])[a-1] || 5;
+    out += h2(`Assignment ${a} of ${cfg.assignments}`);
+    out += bigField('Assignment Overview', [
+      'Write 1–2 sentences describing the assignment.',
+      `Example: In this assignment, you will practice the concepts from this module across ${numParts} part${numParts!==1?'s':''}.`,
+    ]);
+    for (let p = 1; p <= numParts; p++) {
+      out += h3(`Part ${p}`);
+      for (let q = 1; q <= numProblems; q++) {
+        out += `\n  Question ${q}\n`;
+        out += field('Question', 'Type your question here.');
+        out += '  Answer choices:\n';
+        out += bullets(['A) [Choice]', 'B) [Choice]', 'C) [Choice]', 'D) [Choice]', 'E) [Choice]']);
+        out += field('Correct answer', '___ (enter A, B, C, D, or E)');
+        out += field('Explanation', 'Explain why the correct answer is right.');
+      }
+    }
+    out += bigField('Assignment Summary', ['1–2 sentences recapping what the assignment assessed.']);
+  }
+
+  // Conclusion
+  const concludeNum = 2 + (cfg.hasRecit ? 1 : 0) + 2;
+  out += h1(`Section ${concludeNum}: Conclusion`);
+  out += bigField('Module Summary', [
+    'Write your 2–3 sentence module summary here.',
+    '',
+    `Example: In this module, you explored the fundamentals of ${cfg.modTitle}.`,
+  ]);
+  out += '\n  Module Key Takeaways:\n';
+  out += bullets([
+    'Key takeaway 1', 'Key takeaway 2', 'Key takeaway 3',
+    'Key takeaway 4', 'Key takeaway 5 (optional)',
+  ]);
+  out += bigField("What's Next (Optional)", [
+    '1–2 sentences previewing the next module or topic.',
+  ]);
+
+  if (cfg.inclProdNotes) {
+    out += h2('Production Notes (for Production Manager)');
+    out += bigField('Notes to Production Manager', [
+      'Any special instructions, accessibility notes, or flagged items for Open edX entry.',
+    ]);
+  }
+
+  return out;
 }
 
 // ── Build the docx ───────────────────────────────────────────────
@@ -1266,12 +1493,12 @@ async function buildDocx(cfg) {
 
       h3(`Lecture ${l} Videos`),
       sp(60),
-      ...(cfg.inclInstr ? [noteBox(`This lecture has ${(cfg.segmentsPerLecture||[])[l-1]||cfg.segments||3} segment${((cfg.segmentsPerLecture||[])[l-1]||cfg.segments||3)!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check${((cfg.kcsPerLecture||[])[l-1]??cfg.kcs??1)>1?'s':''} that follow.`), sp(80)] : []),
+      ...(cfg.inclInstr ? [noteBox(`This lecture has ${(cfg.segmentsPerLecture||[])[l-1]||3} segment${((cfg.segmentsPerLecture||[])[l-1]||3)!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check${((cfg.kcsPerLecture||[])[l-1]??1)>1?'s':''} that follow.`), sp(80)] : []),
     );
 
     // Segments
-    const numSegs_l = (cfg.segmentsPerLecture||[])[l-1] || cfg.segments || 3;
-    const kcForLecture_l = (cfg.kcsPerLecture||[])[l-1] != null ? (cfg.kcsPerLecture||[])[l-1] : (cfg.kcs != null ? cfg.kcs : 1);
+    const numSegs_l = (cfg.segmentsPerLecture||[])[l-1] || 3;
+    const kcForLecture_l = (cfg.kcsPerLecture||[])[l-1] != null ? (cfg.kcsPerLecture||[])[l-1] : 1;
     for (let s = 1; s <= numSegs_l; s++) {
       const kcTotal = kcForLecture_l;
       lecturesSection.push(
