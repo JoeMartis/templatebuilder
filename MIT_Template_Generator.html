@@ -1046,13 +1046,13 @@ async function buildDocx(cfg) {
       fieldBox("Estimated Total Video Time", "e.g., 12 minutes across segments", GREEN_BG),
       sp(160),
 
-      h3(`${sectionNum}.${l}.1  Lecture ${l} Overview`),
+      h3(`Lecture ${l} Overview`),
       sp(60),
       ...(cfg.inclInstr ? [noteBox("1–2 sentences previewing what this lecture covers. Shown to learners before they watch."), sp(80)] : []),
       bigFieldBox("Lecture Overview", ["Type 1–2 sentences here."], GREEN_BG),
       sp(120),
 
-      h3(`${sectionNum}.${l}.2  Lecture ${l} Learning Objectives`),
+      h3(`Lecture ${l} Learning Objectives`),
       sp(60),
       ...(cfg.inclInstr ? [noteBox("2–4 specific, measurable objectives scoped to this lecture. These map to the Knowledge Checks below."), sp(80)] : []),
       new Paragraph({spacing:{before:0,after:80},
@@ -1062,7 +1062,7 @@ async function buildDocx(cfg) {
       bullet("Objective 3", bLecObj),
       sp(180),
 
-      h3(`${sectionNum}.${l}.3  Lecture ${l} Videos`),
+      h3(`Lecture ${l} Videos`),
       sp(60),
       ...(cfg.inclInstr ? [noteBox(`This lecture has ${cfg.segments} segment${cfg.segments!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check${cfg.kcs>1?'s':''} that follow.`), sp(80)] : []),
     );
@@ -1097,7 +1097,7 @@ async function buildDocx(cfg) {
 
     // Lecture Summary
     lecturesSection.push(
-      h3(`${sectionNum}.${l}.4  Lecture ${l} Summary`),
+      h3(`Lecture ${l} Summary`),
       sp(60),
       ...(cfg.inclInstr ? [noteBox("1–2 sentence recap followed by 3–5 key takeaways. Appears as a text block in Open edX after videos."), sp(80)] : []),
       bigFieldBox("Lecture Summary", ["1–2 sentence wrap-up of what was covered and why it matters."], GREEN_BG),
@@ -1133,7 +1133,7 @@ async function buildDocx(cfg) {
         h2(`Recitation ${r} of ${cfg.recitations}`),
         sp(120),
 
-        h3(`${rSec}.${r}.1  Recitation ${r} Overview`),
+        h3(`Recitation ${r} Overview`),
         sp(60),
         ...(cfg.inclInstr ? [noteBox("1–2 sentences describing the purpose of this recitation and how it connects to the lectures."), sp(80)] : []),
         bigFieldBox("Recitation Overview", [
@@ -1142,7 +1142,7 @@ async function buildDocx(cfg) {
         ], PURPLE_BG),
         sp(120),
 
-        h3(`${rSec}.${r}.2  Recitation ${r} Video(s)`),
+        h3(`Recitation ${r} Video(s)`),
         sp(60),
         ...(cfg.inclInstr ? [noteBox("Fill in a block for each video segment."), sp(80)] : []),
       );
@@ -1170,7 +1170,7 @@ async function buildDocx(cfg) {
       }
 
       recitSection.push(
-        h3(`${rSec}.${r}.3  Recitation ${r} Summary`),
+        h3(`Recitation ${r} Summary`),
         sp(60),
         bigFieldBox("Recitation Summary", [
           "1–2 sentence wrap-up of what the recitation demonstrated.",
@@ -1200,7 +1200,7 @@ async function buildDocx(cfg) {
         h2(`Assignment ${a} of ${cfg.assignments}`),
         sp(120),
 
-        h3(`${aSec}.${a}.1  Assignment ${a} Overview`),
+        h3(`Assignment ${a} Overview`),
         sp(60),
         ...(cfg.inclInstr ? [noteBox("1–2 sentences explaining what the assignment asks learners to do and how it connects to the module learning goals."), sp(80)] : []),
         bigFieldBox("Assignment Overview", [
@@ -1209,7 +1209,7 @@ async function buildDocx(cfg) {
         ], ORANGE_BG),
         sp(120),
 
-        h3(`${aSec}.${a}.2  Graded Assignment ${a}`),
+        h3(`Graded Assignment ${a}`),
         sp(60),
         ...(cfg.inclInstr ? [noteBox("Provide full assignment content. Include all questions, prompts, or problem statements. Attach code notebooks, data files, or rubrics separately."), sp(80)] : []),
         fieldBox("Assignment Title", `e.g., Assignment ${a}: [Title]`, ORANGE_BG),
@@ -1237,7 +1237,7 @@ async function buildDocx(cfg) {
         ], LIGHT),
         sp(120),
 
-        h3(`${aSec}.${a}.3  Assignment ${a} Summary`),
+        h3(`Assignment ${a} Summary`),
         sp(60),
         bigFieldBox("Assignment Summary", [
           "1–2 sentences shown to learners after submission, recapping what the assignment assessed.",
@@ -1258,7 +1258,7 @@ async function buildDocx(cfg) {
     rule(GREEN_H),
     sp(120),
 
-    h2(`${concludeNum}.1  Module Summary`),
+    h2(`Module Summary`),
     sp(60),
     ...(cfg.inclInstr ? [noteBox("Write 2–3 sentences recapping the entire module — what was covered, what was practiced, and what learners are now equipped to do."), sp(80)] : []),
     bigFieldBox("Module Summary", [
@@ -1278,7 +1278,7 @@ async function buildDocx(cfg) {
     bullet("Key takeaway 5 (optional)", bModKT),
     sp(160),
 
-    h2(`${concludeNum}.2  What's Next (Optional)`),
+    h2(`What's Next (Optional)`),
     sp(60),
     bigFieldBox("Preview of Next Module", [
       "1–2 sentences previewing the next module or topic.",
