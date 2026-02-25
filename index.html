@@ -1604,7 +1604,7 @@ async function buildDocx(cfg) {
 
       h3(`Lecture ${l} Learning Objectives`),
       sp(60),
-      ...(cfg.inclInstr ? [noteBox("2–4 specific, measurable objectives scoped to this lecture. These map to the Knowledge Checks below."), sp(80)] : []),
+      ...(cfg.inclInstr ? [noteBox("2–4 specific, measurable objectives scoped to this lecture."), sp(80)] : []),
       new Paragraph({spacing:{before:0,after:80},
         children:[txt("After this lecture, learners will be able to:",{bold:true})]}),
       bullet("Objective 1", bLecObj),
