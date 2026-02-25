@@ -1212,7 +1212,7 @@ function buildTxt(cfg) {
         out += field('Question', 'Type your question here.');
         out += '  Type:  □ Multiple Choice (single)   □ Multiple Choice (multi)   □ True/False\n';
         out += '  Answer choices (mark correct with ★):\n';
-        out += bullets(['A) [Choice]', 'B) [Choice]', 'C) [Choice]', 'D) [Choice]']);
+        out += bullets(['First Option [Choice]', 'Second Option [Choice]', 'Third Option [Choice]', 'Fourth Option [Choice]']);
         out += field('Feedback — correct answer', 'Explain why the correct answer is right.');
         out += field('Feedback — incorrect answer', 'Guide the learner to reconsider.');
       }
@@ -1259,8 +1259,8 @@ function buildTxt(cfg) {
         out += `\n  Question ${q}\n`;
         out += field('Question', 'Type your question here.');
         out += '  Answer choices:\n';
-        out += bullets(['A) [Choice]', 'B) [Choice]', 'C) [Choice]', 'D) [Choice]', 'E) [Choice]']);
-        out += field('Correct answer', '___ (enter A, B, C, D, or E)');
+        out += bullets(['First Option [Choice]', 'Second Option [Choice]', 'Third Option [Choice]', 'Fourth Option [Choice]', 'Fifth Option [Choice]']);
+        out += field('Correct answer', '___ (enter First, Second, Third, Fourth, or Fifth)');
         out += field('Explanation', 'Explain why the correct answer is right.');
       }
     }
@@ -1438,7 +1438,7 @@ async function buildDocx(cfg) {
             new Paragraph({spacing:{before:80,after:40}, children:[
               txt("Answer choices (mark correct with ★):",{bold:true})
             ]}),
-            ...["A)","B)","C)","D)"].map(l => new Paragraph({spacing:{before:0,after:40},
+            ...["First Option","Second Option","Third Option","Fourth Option"].map(l => new Paragraph({spacing:{before:0,after:40},
               children:[txt(`□  ${l} `,{color:"999999",italics:true})]})),
             new Paragraph({spacing:{before:80,after:40}, children:[
               txt("Feedback — correct answer:",{bold:true})
