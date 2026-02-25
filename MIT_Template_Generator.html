@@ -1285,7 +1285,7 @@ function buildTxt(cfg) {
 async function buildDocx(cfg) {
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-    HeadingLevel, AlignmentType, LevelFormat, BorderStyle, WidthType,
+    AlignmentType, LevelFormat, BorderStyle, WidthType,
     ShadingType, PageBreak, TableOfContents, Footer, PageNumber
   } = docx;
 
@@ -1391,13 +1391,13 @@ async function buildDocx(cfg) {
   }
 
   function h1(text) {
-    return new Paragraph({ heading:HeadingLevel.HEADING_1, children:[new TextRun({text,font:"Arial"})] });
+    return new Paragraph({ style:"MITHeading1", children:[new TextRun({text,font:"Arial"})] });
   }
   function h2(text) {
-    return new Paragraph({ heading:HeadingLevel.HEADING_2, children:[new TextRun({text,font:"Arial"})] });
+    return new Paragraph({ style:"MITHeading2", children:[new TextRun({text,font:"Arial"})] });
   }
   function h3(text) {
-    return new Paragraph({ heading:HeadingLevel.HEADING_3, children:[new TextRun({text,font:"Arial"})] });
+    return new Paragraph({ style:"MITHeading3", children:[new TextRun({text,font:"Arial"})] });
   }
 
   // ── Knowledge Check ──
@@ -1533,7 +1533,7 @@ async function buildDocx(cfg) {
   // ════════════════════════════════════════════════════════════
   const toc = cfg.inclTOC ? [
     h1("Contents"),
-    new TableOfContents("Contents", {hyperlink:true, headingStyleRange:"1-3"}),
+    new TableOfContents("Contents", {hyperlink:true, stylesWithLevels:[{styleName:"MITHeading1",level:1},{styleName:"MITHeading2",level:2},{styleName:"MITHeading3",level:3}]}),
     pageBreak(),
   ] : [];
 
@@ -1839,17 +1839,18 @@ async function buildDocx(cfg) {
   }));
 
   const doc = new Document({
+    features: { updateFields: true },
     numbering: { config: numberingConfig },
     styles: {
       default: { document: { run: { font:"Arial", size:20, color:DARK } } },
       paragraphStyles: [
-        { id:"Heading1", name:"Heading 1", basedOn:"Normal", next:"Normal", quickFormat:true,
+        { id:"MITHeading1", name:"MIT Heading 1", basedOn:"Normal", next:"Normal", quickFormat:true,
           run:{size:38,bold:true,font:"Arial",color:MIT_RED},
           paragraph:{spacing:{before:480,after:120},outlineLevel:0} },
-        { id:"Heading2", name:"Heading 2", basedOn:"Normal", next:"Normal", quickFormat:true,
+        { id:"MITHeading2", name:"MIT Heading 2", basedOn:"Normal", next:"Normal", quickFormat:true,
           run:{size:26,bold:true,font:"Arial",color:DARK},
           paragraph:{spacing:{before:320,after:80},outlineLevel:1} },
-        { id:"Heading3", name:"Heading 3", basedOn:"Normal", next:"Normal", quickFormat:true,
+        { id:"MITHeading3", name:"MIT Heading 3", basedOn:"Normal", next:"Normal", quickFormat:true,
           run:{size:20,bold:true,font:"Arial",color:MED},
           paragraph:{spacing:{before:200,after:60},outlineLevel:2} },
       ]
