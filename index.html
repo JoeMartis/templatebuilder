@@ -1543,7 +1543,7 @@ async function buildDocx(cfg) {
   // ════════════════════════════════════════════════════════════
   const toc = cfg.inclTOC ? [
     h1("Contents"),
-    new TableOfContents("Contents", {hyperlink:true, stylesWithLevels:[{styleName:"MITHeading1",level:1},{styleName:"MITHeading2",level:2},{styleName:"MITHeading3",level:3}]}),
+    new TableOfContents("Contents", {hyperlink:true, stylesWithLevels:[{styleName:"MIT Heading 1",level:1},{styleName:"MIT Heading 2",level:2},{styleName:"MIT Heading 3",level:3}]}),
     pageBreak(),
   ] : [];
 
