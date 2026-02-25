@@ -382,7 +382,10 @@
     padding-top: 16px;
     border-top: 1px solid var(--warm-gray);
   }
-  .optional-body.open { display: block; }
+  .optional-body.open {
+    display: block;
+    animation: slideDown 0.28s ease-out;
+  }
 
   /* ── Format picker ── */
   .format-picker {
@@ -480,6 +483,9 @@
   }
   .btn-generate:active:not(:disabled) { transform: translateY(0); }
   .btn-generate:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+  .btn-generate:not(:disabled):not(.loading):not(.success) {
+    animation: idleGlow 3s ease-in-out infinite;
+  }
   .btn-generate.success {
     background: var(--green) !important;
     box-shadow: 0 4px 20px rgba(26,107,60,0.35) !important;
@@ -521,6 +527,22 @@
     flex-shrink: 0;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes nudge {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-6px); }
+    40%     { transform: translateX(6px); }
+    60%     { transform: translateX(-4px); }
+    80%     { transform: translateX(3px); }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes idleGlow {
+    0%,100% { box-shadow: 0 4px 18px rgba(163,31,52,0.28); }
+    50%     { box-shadow: 0 4px 28px rgba(163,31,52,0.52); }
+  }
+  .counter-val.nudge { animation: nudge 0.38s ease-out; }
 
   /* ── Summary pill ── */
   #summary {
@@ -819,9 +841,17 @@ function adjust(id, delta) {
   const max  = parseInt(el.max) || 99;
   const next = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
   if (next !== parseInt(el.value)) { el.value = next; flashVal(el); }
+  else nudgeEl(el);
   if (id === 'lectures') renderLectureGroups();
   if (id === 'assignments') renderAssignmentGroups();
   updateSummary();
+}
+
+function nudgeEl(el) {
+  el.classList.remove('nudge');
+  void el.offsetWidth;
+  el.classList.add('nudge');
+  el.addEventListener('animationend', () => el.classList.remove('nudge'), { once: true });
 }
 
 function flashVal(el) {
@@ -1178,17 +1208,6 @@ function buildTxt(cfg) {
       const numKcs = ((cfg.kcsPerSegment||[])[l-1]||[])[s-1] ?? 1;
       out += `\n  Lecture ${l}.${s}\n`;
       out += field('Segment Title', `e.g., ${l}.${s} [Segment title]`);
-      out += field('Target Duration', 'e.g., 5–7 minutes');
-      out += bigField('Script / Content Outline', [
-        'Write your script or a detailed outline here.',
-        '',
-        'Suggested structure:',
-        '  • Hook / opening question',
-        '  • Core concept explanation',
-        '  • Example or analogy',
-        '  • Visual / slide notes',
-        '  • Transition to next segment',
-      ]);
       for (let k = 1; k <= numKcs; k++) {
         out += `\n  KNOWLEDGE CHECK ${k}\n`;
         out += field('Question', 'Type your question here.');
@@ -1219,14 +1238,6 @@ function buildTxt(cfg) {
       for (let s = 1; s <= cfg.recitSegs; s++) {
         out += `\n  Recitation ${r}.${s}\n`;
         out += field('Segment Title', `e.g., Recitation ${r}.${s} [Title]`);
-        out += field('Estimated Duration', 'e.g., 15 minutes');
-        out += bigField('Script / Content Outline', [
-          'Detailed outline or script.',
-          '  • Restate the problem or question',
-          '  • Walk through step by step',
-          '  • Highlight common mistakes',
-          '  • Summarize what was demonstrated',
-        ]);
       }
       out += bigField('Recitation Summary', ['1–2 sentence wrap-up.']);
     }
@@ -1606,7 +1617,7 @@ async function buildDocx(cfg) {
 
       h3(`Lecture ${l} Videos`),
       sp(60),
-      ...(cfg.inclInstr ? [noteBox(`This lecture has ${(cfg.segmentsPerLecture||[])[l-1]||3} segment${((cfg.segmentsPerLecture||[])[l-1]||3)!==1?'s':''}. Fill in the script/outline for each, then complete the Knowledge Check(s) that follow each segment.`), sp(80)] : []),
+      ...(cfg.inclInstr ? [noteBox(`This lecture has ${(cfg.segmentsPerLecture||[])[l-1]||3} segment${((cfg.segmentsPerLecture||[])[l-1]||3)!==1?'s':''}. Fill in the title for each, then complete the Knowledge Check(s) that follow.`), sp(80)] : []),
     );
 
     // Segments
@@ -1618,19 +1629,6 @@ async function buildDocx(cfg) {
         new Paragraph({spacing:{before:0,after:80},
           children:[txt(`Lecture ${l}.${s}`,{bold:true,size:22,color:MED})]}),
         fieldBox("Segment Title", `e.g., ${l}.${s} [Segment title]`, GREEN_BG),
-        sp(80),
-        fieldBox("Target Duration", "e.g., 5–7 minutes", GREEN_BG),
-        sp(80),
-        bigFieldBox("Script / Content Outline", [
-          "Write your script or a detailed outline here.",
-          "",
-          "Suggested structure:",
-          "  • Hook / opening question",
-          "  • Core concept explanation",
-          "  • Example or analogy",
-          "  • Visual / slide notes (describe what should appear on screen)",
-          "  • Transition to next segment",
-        ], GREEN_BG, "Slides, diagrams, or code can be referenced here and attached separately."),
       );
       for (let k = 1; k <= kcTotal; k++) {
         lecturesSection.push(...knowledgeCheck(k));
@@ -1697,17 +1695,6 @@ async function buildDocx(cfg) {
             txt(`Recitation ${r}.${s}`,{bold:true,size:22,color:MED})
           ]}),
           fieldBox("Segment Title", `e.g., Recitation ${r}.${s} [Title]`, PURPLE_BG),
-          sp(80),
-          fieldBox("Estimated Duration", "e.g., 15 minutes", PURPLE_BG),
-          sp(80),
-          bigFieldBox("Script / Content Outline", [
-            "Detailed outline or script.",
-            "",
-            "  • Restate the problem or question",
-            "  • Walk through step by step",
-            "  • Highlight common mistakes",
-            "  • Summarize what was demonstrated",
-          ], PURPLE_BG),
           sp(120),
         );
       }

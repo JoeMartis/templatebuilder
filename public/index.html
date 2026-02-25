@@ -85,6 +85,22 @@
     100% { box-shadow: 0 4px 20px rgba(26,107,60,0.35); }
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes nudge {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-6px); }
+    40%     { transform: translateX(6px); }
+    60%     { transform: translateX(-4px); }
+    80%     { transform: translateX(3px); }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes idleGlow {
+    0%,100% { box-shadow: 0 4px 18px rgba(163,31,52,0.28); }
+    50%     { box-shadow: 0 4px 28px rgba(163,31,52,0.52); }
+  }
+  .counter-val.nudge { animation: nudge 0.38s ease-out; }
 
   /* ── Header ── */
   header {
@@ -368,7 +384,10 @@
     padding-top: 16px;
     border-top: 1px solid var(--warm-gray);
   }
-  .optional-body.open { display: block; }
+  .optional-body.open {
+    display: block;
+    animation: slideDown 0.28s ease-out;
+  }
 
   /* ── Per-lecture groups ── */
   #per-lecture-groups { margin-top: 14px; }
@@ -460,6 +479,9 @@
   }
   .btn-generate:active:not(:disabled) { transform: translateY(0); }
   .btn-generate:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+  .btn-generate:not(:disabled):not(.loading):not(.success) {
+    animation: idleGlow 3s ease-in-out infinite;
+  }
   .btn-generate.success {
     background: var(--green) !important;
     box-shadow: 0 4px 20px rgba(26,107,60,0.35) !important;
@@ -741,7 +763,15 @@ function adjust(id, delta) {
   const max  = parseInt(el.max) || 99;
   const next = Math.max(min, Math.min(max, parseInt(el.value || 0) + delta));
   if (next !== parseInt(el.value)) { el.value = next; flashVal(el); }
+  else nudgeEl(el);
   updateSummary();
+}
+
+function nudgeEl(el) {
+  el.classList.remove('nudge');
+  void el.offsetWidth;
+  el.classList.add('nudge');
+  el.addEventListener('animationend', () => el.classList.remove('nudge'), { once: true });
 }
 
 function flashVal(el) {
