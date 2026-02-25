@@ -1481,16 +1481,16 @@ async function buildDocx(cfg) {
             new Paragraph({spacing:{before:0,after:100}, children:[
               txt("Type your question here.",{color:"999999",italics:true})
             ]}),
-            ...["A","B","C","D","E"].map(letter =>
+            ...["First Option","Second Option","Third Option","Fourth Option","Fifth Option"].map(label =>
               new Paragraph({spacing:{before:0,after:36}, children:[
-                txt(`○  ${letter}.  `,{color:MED}),
+                txt(`○  ${label}  `,{color:MED}),
                 txt("[Choice text]",{color:"999999",italics:true})
               ]})
             ),
             sp(60),
             new Paragraph({spacing:{before:0,after:60}, children:[
               txt("Correct answer:  ",{bold:true}),
-              txt("___  (enter A, B, C, D, or E)",{color:"999999",italics:true})
+              txt("___  (enter First, Second, Third, Fourth, or Fifth)",{color:"999999",italics:true})
             ]}),
             new Paragraph({spacing:{before:60,after:40}, children:[
               txt("Explanation:",{bold:true})
