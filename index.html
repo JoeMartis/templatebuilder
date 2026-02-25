@@ -1196,7 +1196,6 @@ function buildTxt(cfg) {
     const numSegs = (cfg.segmentsPerLecture||[])[l-1] || 3;
     out += h2(`Lecture ${l} of ${cfg.lectures}`);
     out += field('Lecture Title', `e.g., Lecture ${l}: [Title]`);
-    out += field('Estimated Total Video Time', 'e.g., 12 minutes across segments');
     out += h3(`Lecture ${l} Overview`);
     out += bigField('Lecture Overview', ['Type 1–2 sentences here.']);
     out += h3(`Lecture ${l} Learning Objectives`);
@@ -1596,8 +1595,6 @@ async function buildDocx(cfg) {
       sp(60),
       fieldBox("Lecture Title", `e.g., Lecture ${l}: [Title]`, GREEN_BG),
       sp(80),
-      fieldBox("Estimated Total Video Time", "e.g., 12 minutes across segments", GREEN_BG),
-      sp(160),
 
       h3(`Lecture ${l} Overview`),
       sp(60),
