@@ -706,7 +706,7 @@
           <span class="optional-badge">optional</span>
         </div>
         <label class="toggle">
-          <input type="checkbox" id="hasRecitations" onchange="toggleOptional('recitations', this.checked)">
+          <input type="checkbox" id="hasRecitations" onchange="toggleOptional('recitations', this.checked); renderRecitGroups()">
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -714,17 +714,12 @@
         <div class="counter-row">
           <div class="counter-item">
             <label>Recitation sections</label>
-            <button class="counter-btn" onclick="adjust('recitations',-1)">−</button>
+            <button class="counter-btn" onclick="adjustRecitations(-1)">−</button>
             <input class="counter-val" type="number" id="recitations" value="1" min="1" max="5">
-            <button class="counter-btn" onclick="adjust('recitations',1)">+</button>
-          </div>
-          <div class="counter-item">
-            <label>Video segments per recitation</label>
-            <button class="counter-btn" onclick="adjust('recitSegs',-1)">−</button>
-            <input class="counter-val" type="number" id="recitSegs" value="1" min="1" max="4">
-            <button class="counter-btn" onclick="adjust('recitSegs',1)">+</button>
+            <button class="counter-btn" onclick="adjustRecitations(1)">+</button>
           </div>
         </div>
+        <div id="per-recitation-groups"></div>
       </div>
     </div>
 
@@ -932,6 +927,41 @@ function adjustSeg(lecIdx, delta) {
 }
 function adjustKc(lecIdx, segIdx, delta) { adjust(`kc_${lecIdx}_${segIdx}`, delta); }
 
+function adjustRecitations(delta) {
+  adjust('recitations', delta);
+  renderRecitGroups();
+}
+
+function renderRecitGroups() {
+  const count     = parseInt(document.getElementById('recitations').value) || 1;
+  const container = document.getElementById('per-recitation-groups');
+  if (!container) return;
+  const prevSegs = Array.from(container.querySelectorAll('.recit-seg-input'))
+    .map(el => parseInt(el.value) || 1);
+
+  container.innerHTML = '';
+
+  for (let i = 1; i <= count; i++) {
+    const segVal = prevSegs[i - 1] != null ? (prevSegs[i - 1] || 1) : 1;
+    const group  = document.createElement('div');
+    group.className = 'lec-group';
+    group.innerHTML =
+      `<div class="lec-group-header">Recitation ${i}</div>` +
+      `<div class="lec-group-body">` +
+        `<div class="counter-item">` +
+          `<label>segments</label>` +
+          `<button class="counter-btn" onclick="adjustRecitSeg(${i},-1)">−</button>` +
+          `<input class="counter-val recit-seg-input" type="number" id="recit_seg_${i}" value="${segVal}" min="1" max="6">` +
+          `<button class="counter-btn" onclick="adjustRecitSeg(${i},1)">+</button>` +
+        `</div>` +
+      `</div>`;
+    container.appendChild(group);
+    group.querySelector('.recit-seg-input').addEventListener('input', updateSummary);
+  }
+}
+
+function adjustRecitSeg(rIdx, delta) { adjust(`recit_seg_${rIdx}`, delta); }
+
 function renderAssignmentGroups() {
   const count = parseInt(document.getElementById('assignments').value) || 1;
   const container = document.getElementById('per-assignment-groups');
@@ -1032,12 +1062,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderLectureGroups();
+  renderRecitGroups();
   renderAssignmentGroups();
   updateSummary();
   // keep summary live on static counters; dynamic inputs are wired inside their render fns
-  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input):not(.parts-input):not(.problems-input)').forEach(el => {
+  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input):not(.parts-input):not(.problems-input):not(.recit-seg-input)').forEach(el => {
     el.addEventListener('input', () => {
       if (el.id === 'lectures')    renderLectureGroups();
+      if (el.id === 'recitations') renderRecitGroups();
       if (el.id === 'assignments') renderAssignmentGroups();
       updateSummary();
     });
@@ -1076,7 +1108,10 @@ async function generate() {
     ),
     hasRecit:     document.getElementById('hasRecitations').checked,
     recitations:  parseInt(document.getElementById('recitations').value) || 1,
-    recitSegs:    parseInt(document.getElementById('recitSegs').value)   || 1,
+    recitSegs:    Array.from(
+      {length: parseInt(document.getElementById('recitations').value) || 1},
+      (_, i) => { const v = parseInt(document.getElementById(`recit_seg_${i+1}`)?.value); return (v >= 1) ? v : 1; }
+    ),
     assignments:  numAssignments,
     partsPerAssignment: Array.from(
       {length: numAssignments},
@@ -1234,7 +1269,8 @@ function buildTxt(cfg) {
         '1–2 sentences here.',
         'Example: This recitation reinforces lecture concepts by walking through a worked example.',
       ]);
-      for (let s = 1; s <= cfg.recitSegs; s++) {
+      const numRecitSegs = Array.isArray(cfg.recitSegs) ? (cfg.recitSegs[r - 1] || 1) : (cfg.recitSegs || 1);
+      for (let s = 1; s <= numRecitSegs; s++) {
         out += `\n  Recitation ${r}.${s}\n`;
         out += field('Segment Title', `e.g., Recitation ${r}.${s} [Title]`);
       }
@@ -1685,7 +1721,8 @@ async function buildDocx(cfg) {
         ...(cfg.inclInstr ? [noteBox("Fill in a block for each video segment."), sp(80)] : []),
       );
 
-      for (let s = 1; s <= cfg.recitSegs; s++) {
+      const numRecitSegs2 = Array.isArray(cfg.recitSegs) ? (cfg.recitSegs[r - 1] || 1) : (cfg.recitSegs || 1);
+      for (let s = 1; s <= numRecitSegs2; s++) {
         recitSection.push(
           sp(80),
           new Paragraph({spacing:{before:0,after:80}, children:[

@@ -391,6 +391,7 @@
 
   /* ── Per-lecture groups ── */
   #per-lecture-groups { margin-top: 14px; }
+  #per-recitation-groups { margin-top: 14px; }
   .lec-group {
     margin-bottom: 8px;
     border: 1px solid var(--warm-gray);
@@ -634,7 +635,7 @@
           <span class="optional-badge">optional</span>
         </div>
         <label class="toggle">
-          <input type="checkbox" id="hasRecitations" onchange="toggleOptional('recitations', this.checked)">
+          <input type="checkbox" id="hasRecitations" onchange="toggleOptional('recitations', this.checked); renderRecitGroups()">
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -642,17 +643,12 @@
         <div class="counter-row">
           <div class="counter-item">
             <label>Recitation sections</label>
-            <button class="counter-btn" onclick="adjust('recitations',-1)">−</button>
+            <button class="counter-btn" onclick="adjustRecitations(-1)">−</button>
             <input class="counter-val" type="number" id="recitations" value="1" min="1" max="5">
-            <button class="counter-btn" onclick="adjust('recitations',1)">+</button>
-          </div>
-          <div class="counter-item">
-            <label>Video segments per recitation</label>
-            <button class="counter-btn" onclick="adjust('recitSegs',-1)">−</button>
-            <input class="counter-val" type="number" id="recitSegs" value="1" min="1" max="4">
-            <button class="counter-btn" onclick="adjust('recitSegs',1)">+</button>
+            <button class="counter-btn" onclick="adjustRecitations(1)">+</button>
           </div>
         </div>
+        <div id="per-recitation-groups"></div>
       </div>
     </div>
 
@@ -792,6 +788,42 @@ function adjustLectures(delta) {
   renderLectureGroups();
 }
 
+// ── Recitation counter ────────────────────────────────────────────
+function adjustRecitations(delta) {
+  adjust('recitations', delta);
+  renderRecitGroups();
+}
+
+function renderRecitGroups() {
+  const count     = parseInt(document.getElementById('recitations').value) || 1;
+  const container = document.getElementById('per-recitation-groups');
+  const prevSegs  = Array.from(container.querySelectorAll('.recit-seg-input'))
+    .map(el => parseInt(el.value) || 1);
+
+  container.innerHTML = '';
+
+  for (let i = 1; i <= count; i++) {
+    const segVal = prevSegs[i - 1] != null ? (prevSegs[i - 1] || 1) : 1;
+    const group  = document.createElement('div');
+    group.className = 'lec-group';
+    group.style.animationDelay = `${(i - 1) * 0.04}s`;
+    group.innerHTML =
+      `<div class="lec-group-header">Recitation ${i}</div>` +
+      `<div class="lec-group-body">` +
+        `<div class="counter-item">` +
+          `<label>segments</label>` +
+          `<button class="counter-btn" onclick="adjustRecitSeg(${i},-1)">−</button>` +
+          `<input class="counter-val recit-seg-input" type="number" id="recit_seg_${i}" value="${segVal}" min="1" max="6">` +
+          `<button class="counter-btn" onclick="adjustRecitSeg(${i},1)">+</button>` +
+        `</div>` +
+      `</div>`;
+    container.appendChild(group);
+    group.querySelector('.recit-seg-input').addEventListener('input', updateSummary);
+  }
+}
+
+function adjustRecitSeg(rIdx, delta) { adjust(`recit_seg_${rIdx}`, delta); }
+
 // ── Per-lecture group rendering ───────────────────────────────────
 function renderLectureGroups() {
   const count     = parseInt(document.getElementById('lectures').value) || 3;
@@ -914,16 +946,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderLectureGroups();
+  renderRecitGroups();
   updateSummary();
 
-  // Wire counters that aren't inside lecture groups
-  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input)').forEach(el =>
+  // Wire counters that aren't inside lecture/recitation groups
+  document.querySelectorAll('.counter-val:not(.seg-input):not(.kc-input):not(.recit-seg-input)').forEach(el =>
     el.addEventListener('input', updateSummary)
   );
 
   // Wire lectures input directly (typed value)
   document.getElementById('lectures').addEventListener('input', () => {
     renderLectureGroups();
+    updateSummary();
+  });
+
+  // Wire recitations input directly (typed value)
+  document.getElementById('recitations').addEventListener('input', () => {
+    renderRecitGroups();
     updateSummary();
   });
 });
@@ -978,7 +1017,10 @@ async function generate() {
     }),
     hasRecit:      document.getElementById('hasRecitations').checked,
     recitations:   parseInt(document.getElementById('recitations').value) || 1,
-    recitSegs:     parseInt(document.getElementById('recitSegs').value)   || 1,
+    recitSegs:     Array.from({ length: parseInt(document.getElementById('recitations').value) || 1 }, (_, i) => {
+      const v = parseInt(document.getElementById(`recit_seg_${i + 1}`)?.value);
+      return v >= 1 ? v : 1;
+    }),
     hasAssign:     document.getElementById('hasAssignments').checked,
     assignments:   parseInt(document.getElementById('assignments').value) || 1,
     inclTOC:       document.getElementById('inclTOC').checked,
