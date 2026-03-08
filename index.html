@@ -1436,7 +1436,7 @@ function buildTxt(cfg) {
       out += `\n  Lecture ${l}.${s}${segTitle ? ': '+segTitle : ''}\n`;
       if (!segTitle) out += field('Segment Title', `e.g., ${l}.${s} [Segment title]`);
       for (let k = 1; k <= numKcs; k++) {
-        out += `\n  KNOWLEDGE CHECK ${k}\n`;
+        out += `\n  Knowledge Check ${k}\n`;
         out += field('Question', 'Type your question here.');
         out += '  Type:  □ Multiple Choice (single)   □ Multiple Choice (multi)   □ True/False\n';
         out += '  Answer choices (mark correct with ★):\n';
@@ -1659,7 +1659,7 @@ async function buildDocx(cfg) {
           margins:{top:140,bottom:140,left:200,right:200},
           children:[
             new Paragraph({spacing:{before:0,after:80}, children:[
-              txt(`✓  KNOWLEDGE CHECK ${num}`,{bold:true,color:BLUE_H})
+              txt(`✓  Knowledge Check ${num}`,{bold:true,color:BLUE_H})
             ]}),
             mkLine("Question:",true),
             new Paragraph({spacing:{before:0,after:120}, children:[
