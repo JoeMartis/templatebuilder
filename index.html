@@ -953,7 +953,7 @@ function renderKcRows(lecIdx, segCount, prevKcs) {
     const item = document.createElement('div');
     item.className = 'counter-item';
     item.innerHTML =
-      `<label>Segment ${j}</label>` +
+      `<label>Seg ${j}</label>` +
       `<button class="counter-btn" onclick="adjustKc(${lecIdx},${j},-1)">−</button>` +
       `<input class="counter-val kc-input" type="number" id="kc_${lecIdx}_${j}" value="${kcVal}" min="0" max="5">` +
       `<button class="counter-btn" onclick="adjustKc(${lecIdx},${j},1)">+</button>`;
