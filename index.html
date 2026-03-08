@@ -617,6 +617,42 @@
     gap: 12px;
     flex-wrap: wrap;
   }
+  .title-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--warm-gray);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+    background: white;
+    margin-bottom: 6px;
+  }
+  .title-input::placeholder { color: #bbb; font-style: italic; }
+  .title-input:focus { outline: none; border-color: var(--mit-red); }
+  .seg-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .seg-title-row label {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 36px;
+  }
+  .seg-title-row input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--warm-gray);
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--text);
+    background: white;
+  }
+  .seg-title-row input::placeholder { color: #bbb; font-style: italic; }
+  .seg-title-row input:focus { outline: none; border-color: var(--mit-red); }
 
   /* ── Section sub-label ── */
   .section-sub {
@@ -868,17 +904,26 @@ function renderLectureGroups() {
       return el ? (parseInt(el.value) || 0) : 1;
     })
   );
+  const prevLecTitles = Array.from(container.querySelectorAll('.lec-title-input')).map(el => el.value);
+  const prevSegTitles = prevSegs.map((segCount, i) =>
+    Array.from({length: segCount}, (_, j) => {
+      const el = document.getElementById(`seg_title_${i+1}_${j+1}`);
+      return el ? el.value : '';
+    })
+  );
 
   container.innerHTML = '';
 
   for (let i = 1; i <= count; i++) {
     const segVal = prevSegs[i - 1] != null ? (prevSegs[i - 1] || 1) : 3;
+    const lecTitle = prevLecTitles[i - 1] || '';
 
     const group = document.createElement('div');
     group.className = 'lec-group';
     group.innerHTML =
       `<div class="lec-group-header">Lecture ${i}</div>` +
       `<div class="lec-group-body">` +
+        `<input type="text" class="title-input lec-title-input" id="lec_title_${i}" value="${lecTitle.replace(/"/g,'&quot;')}" placeholder="Lecture title (optional)">` +
         `<div class="counter-item">` +
           `<label>segments</label>` +
           `<button class="counter-btn" onclick="adjustSeg(${i},-1)">−</button>` +
@@ -887,9 +932,11 @@ function renderLectureGroups() {
         `</div>` +
         `<div class="lec-kc-label">KCs per segment</div>` +
         `<div id="seg-kc-${i}" style="display:flex;gap:8px;flex-wrap:wrap;width:100%"></div>` +
+        `<div id="seg-titles-${i}" style="width:100%"></div>` +
       `</div>`;
     container.appendChild(group);
     renderKcRows(i, segVal, prevKcs[i - 1] || []);
+    renderSegTitleRows(i, segVal, prevSegTitles[i - 1] || []);
   }
 
   container.querySelectorAll('.seg-input').forEach(el =>
@@ -915,15 +962,40 @@ function renderKcRows(lecIdx, segCount, prevKcs) {
   }
 }
 
+function renderSegTitleRows(lecIdx, segCount, prevTitles) {
+  const container = document.getElementById(`seg-titles-${lecIdx}`);
+  if (!container) return;
+  container.innerHTML = '';
+  if (segCount <= 0) return;
+  const lbl = document.createElement('div');
+  lbl.className = 'lec-kc-label';
+  lbl.textContent = 'Segment titles';
+  container.appendChild(lbl);
+  for (let j = 1; j <= segCount; j++) {
+    const row = document.createElement('div');
+    row.className = 'seg-title-row';
+    const val = (prevTitles[j-1] || '').replace(/"/g,'&quot;');
+    row.innerHTML =
+      `<label>Seg ${j}</label>` +
+      `<input type="text" id="seg_title_${lecIdx}_${j}" value="${val}" placeholder="Segment ${lecIdx}.${j} title (optional)">`;
+    container.appendChild(row);
+  }
+}
+
 function adjustSeg(lecIdx, delta) {
   const oldCount = parseInt(document.getElementById(`seg_${lecIdx}`)?.value) || 1;
   const savedKcs = Array.from({length: oldCount}, (_, j) => {
     const el = document.getElementById(`kc_${lecIdx}_${j+1}`);
     return el ? (parseInt(el.value) || 0) : 1;
   });
+  const savedSegTitles = Array.from({length: oldCount}, (_, j) => {
+    const el = document.getElementById(`seg_title_${lecIdx}_${j+1}`);
+    return el ? el.value : '';
+  });
   adjust(`seg_${lecIdx}`, delta);
   const newCount = parseInt(document.getElementById(`seg_${lecIdx}`)?.value) || 1;
   renderKcRows(lecIdx, newCount, savedKcs);
+  renderSegTitleRows(lecIdx, newCount, savedSegTitles);
 }
 function adjustKc(lecIdx, segIdx, delta) { adjust(`kc_${lecIdx}_${segIdx}`, delta); }
 
@@ -938,29 +1010,69 @@ function renderRecitGroups() {
   if (!container) return;
   const prevSegs = Array.from(container.querySelectorAll('.recit-seg-input'))
     .map(el => parseInt(el.value) || 1);
+  const prevRecitTitles = Array.from(container.querySelectorAll('.recit-title-input')).map(el => el.value);
+  const prevRecitSegTitles = prevSegs.map((segCount, i) =>
+    Array.from({length: segCount}, (_, j) => {
+      const el = document.getElementById(`recit_seg_title_${i+1}_${j+1}`);
+      return el ? el.value : '';
+    })
+  );
 
   container.innerHTML = '';
 
   for (let i = 1; i <= count; i++) {
     const segVal = prevSegs[i - 1] != null ? (prevSegs[i - 1] || 1) : 1;
+    const recitTitle = prevRecitTitles[i - 1] || '';
     const group  = document.createElement('div');
     group.className = 'lec-group';
     group.innerHTML =
       `<div class="lec-group-header">Recitation ${i}</div>` +
       `<div class="lec-group-body">` +
+        `<input type="text" class="title-input recit-title-input" id="recit_title_${i}" value="${recitTitle.replace(/"/g,'&quot;')}" placeholder="Recitation title (optional)">` +
         `<div class="counter-item">` +
           `<label>segments</label>` +
           `<button class="counter-btn" onclick="adjustRecitSeg(${i},-1)">−</button>` +
           `<input class="counter-val recit-seg-input" type="number" id="recit_seg_${i}" value="${segVal}" min="1" max="6">` +
           `<button class="counter-btn" onclick="adjustRecitSeg(${i},1)">+</button>` +
         `</div>` +
+        `<div id="recit-seg-titles-${i}" style="width:100%"></div>` +
       `</div>`;
     container.appendChild(group);
     group.querySelector('.recit-seg-input').addEventListener('input', updateSummary);
+    renderRecitSegTitleRows(i, segVal, prevRecitSegTitles[i - 1] || []);
   }
 }
 
-function adjustRecitSeg(rIdx, delta) { adjust(`recit_seg_${rIdx}`, delta); }
+function renderRecitSegTitleRows(recitIdx, segCount, prevTitles) {
+  const container = document.getElementById(`recit-seg-titles-${recitIdx}`);
+  if (!container) return;
+  container.innerHTML = '';
+  if (segCount <= 0) return;
+  const lbl = document.createElement('div');
+  lbl.className = 'lec-kc-label';
+  lbl.textContent = 'Segment titles';
+  container.appendChild(lbl);
+  for (let j = 1; j <= segCount; j++) {
+    const row = document.createElement('div');
+    row.className = 'seg-title-row';
+    const val = (prevTitles[j-1] || '').replace(/"/g,'&quot;');
+    row.innerHTML =
+      `<label>Seg ${j}</label>` +
+      `<input type="text" id="recit_seg_title_${recitIdx}_${j}" value="${val}" placeholder="Recitation ${recitIdx}.${j} title (optional)">`;
+    container.appendChild(row);
+  }
+}
+
+function adjustRecitSeg(rIdx, delta) {
+  const oldCount = parseInt(document.getElementById(`recit_seg_${rIdx}`)?.value) || 1;
+  const savedTitles = Array.from({length: oldCount}, (_, j) => {
+    const el = document.getElementById(`recit_seg_title_${rIdx}_${j+1}`);
+    return el ? el.value : '';
+  });
+  adjust(`recit_seg_${rIdx}`, delta);
+  const newCount = parseInt(document.getElementById(`recit_seg_${rIdx}`)?.value) || 1;
+  renderRecitSegTitleRows(rIdx, newCount, savedTitles);
+}
 
 function renderAssignmentGroups() {
   const count = parseInt(document.getElementById('assignments').value) || 1;
@@ -968,18 +1080,27 @@ function renderAssignmentGroups() {
 
   const prevParts    = Array.from(container.querySelectorAll('.parts-input')).map(el => parseInt(el.value) || 2);
   const prevProblems = Array.from(container.querySelectorAll('.problems-input')).map(el => parseInt(el.value) || 5);
+  const prevAssignTitles = Array.from(container.querySelectorAll('.assign-title-input')).map(el => el.value);
+  const prevPartTitles = prevParts.map((partCount, i) =>
+    Array.from({length: partCount}, (_, j) => {
+      const el = document.getElementById(`part_title_${i+1}_${j+1}`);
+      return el ? el.value : '';
+    })
+  );
 
   container.innerHTML = '';
 
   for (let i = 1; i <= count; i++) {
     const partsVal    = prevParts[i - 1]    != null ? (prevParts[i - 1]    || 1) : 2;
     const problemsVal = prevProblems[i - 1] != null ? (prevProblems[i - 1] || 1) : 5;
+    const assignTitle = prevAssignTitles[i - 1] || '';
 
     const group = document.createElement('div');
     group.className = 'assign-group';
     group.innerHTML =
       `<div class="assign-group-header">Assignment ${i}</div>` +
       `<div class="assign-group-body">` +
+        `<input type="text" class="title-input assign-title-input" id="assign_title_${i}" value="${assignTitle.replace(/"/g,'&quot;')}" placeholder="Assignment title (optional)">` +
         `<div class="counter-item">` +
           `<label>parts</label>` +
           `<button class="counter-btn" onclick="adjustParts(${i},-1)">−</button>` +
@@ -992,8 +1113,10 @@ function renderAssignmentGroups() {
           `<input class="counter-val problems-input" type="number" id="problems_${i}" value="${problemsVal}" min="1" max="20">` +
           `<button class="counter-btn" onclick="adjustProblems(${i},1)">+</button>` +
         `</div>` +
+        `<div id="part-titles-${i}" style="width:100%"></div>` +
       `</div>`;
     container.appendChild(group);
+    renderPartTitleRows(i, partsVal, prevPartTitles[i - 1] || []);
   }
 
   container.querySelectorAll('.parts-input, .problems-input').forEach(el =>
@@ -1001,7 +1124,36 @@ function renderAssignmentGroups() {
   );
 }
 
-function adjustParts(idx, delta)    { adjust(`parts_${idx}`, delta); }
+function renderPartTitleRows(assignIdx, partCount, prevTitles) {
+  const container = document.getElementById(`part-titles-${assignIdx}`);
+  if (!container) return;
+  container.innerHTML = '';
+  if (partCount <= 0) return;
+  const lbl = document.createElement('div');
+  lbl.className = 'lec-kc-label';
+  lbl.textContent = 'Part titles';
+  container.appendChild(lbl);
+  for (let j = 1; j <= partCount; j++) {
+    const row = document.createElement('div');
+    row.className = 'seg-title-row';
+    const val = (prevTitles[j-1] || '').replace(/"/g,'&quot;');
+    row.innerHTML =
+      `<label>Part ${j}</label>` +
+      `<input type="text" id="part_title_${assignIdx}_${j}" value="${val}" placeholder="Part ${j} title (optional)">`;
+    container.appendChild(row);
+  }
+}
+
+function adjustParts(idx, delta) {
+  const oldCount = parseInt(document.getElementById(`parts_${idx}`)?.value) || 1;
+  const savedTitles = Array.from({length: oldCount}, (_, j) => {
+    const el = document.getElementById(`part_title_${idx}_${j+1}`);
+    return el ? el.value : '';
+  });
+  adjust(`parts_${idx}`, delta);
+  const newCount = parseInt(document.getElementById(`parts_${idx}`)?.value) || 1;
+  renderPartTitleRows(idx, newCount, savedTitles);
+}
 function adjustProblems(idx, delta) { adjust(`problems_${idx}`, delta); }
 
 function toggleOptional(id, show) {
@@ -1121,6 +1273,45 @@ async function generate() {
       {length: numAssignments},
       (_, i) => { const v = parseInt(document.getElementById(`problems_${i+1}`)?.value); return (v >= 1) ? v : 5; }
     ),
+    lectureTitles: Array.from(
+      {length: numLectures},
+      (_, i) => (document.getElementById(`lec_title_${i+1}`)?.value || '').trim()
+    ),
+    segmentTitles: Array.from(
+      {length: numLectures},
+      (_, i) => {
+        const numSegs = parseInt(document.getElementById(`seg_${i+1}`)?.value) || 3;
+        return Array.from({length: numSegs}, (_, j) =>
+          (document.getElementById(`seg_title_${i+1}_${j+1}`)?.value || '').trim()
+        );
+      }
+    ),
+    recitTitles: Array.from(
+      {length: parseInt(document.getElementById('recitations').value) || 1},
+      (_, i) => (document.getElementById(`recit_title_${i+1}`)?.value || '').trim()
+    ),
+    recitSegTitles: Array.from(
+      {length: parseInt(document.getElementById('recitations').value) || 1},
+      (_, i) => {
+        const numSegs = parseInt(document.getElementById(`recit_seg_${i+1}`)?.value) || 1;
+        return Array.from({length: numSegs}, (_, j) =>
+          (document.getElementById(`recit_seg_title_${i+1}_${j+1}`)?.value || '').trim()
+        );
+      }
+    ),
+    assignTitles: Array.from(
+      {length: numAssignments},
+      (_, i) => (document.getElementById(`assign_title_${i+1}`)?.value || '').trim()
+    ),
+    partTitles: Array.from(
+      {length: numAssignments},
+      (_, i) => {
+        const numParts = parseInt(document.getElementById(`parts_${i+1}`)?.value) || 2;
+        return Array.from({length: numParts}, (_, j) =>
+          (document.getElementById(`part_title_${i+1}_${j+1}`)?.value || '').trim()
+        );
+      }
+    ),
     inclTOC:      document.getElementById('inclTOC').checked,
     inclInstr:    document.getElementById('inclInstr').checked,
     inclProdNotes:document.getElementById('inclProdNotes').checked,
@@ -1229,8 +1420,9 @@ function buildTxt(cfg) {
 
   for (let l = 1; l <= cfg.lectures; l++) {
     const numSegs = (cfg.segmentsPerLecture||[])[l-1] || 3;
-    out += h2(`Lecture ${l} of ${cfg.lectures}`);
-    out += field('Lecture Title', `e.g., Lecture ${l}: [Title]`);
+    const lecTitle = (cfg.lectureTitles||[])[l-1];
+    out += h2(lecTitle ? `Lecture ${l}: ${lecTitle}` : `Lecture ${l} of ${cfg.lectures}`);
+    if (!lecTitle) out += field('Lecture Title', `e.g., Lecture ${l}: [Title]`);
     out += h3(`Lecture ${l} Overview`);
     out += bigField('Lecture Overview', ['Type 1–2 sentences here.']);
     out += h3(`Lecture ${l} Learning Objectives`);
@@ -1240,8 +1432,9 @@ function buildTxt(cfg) {
     out += h3(`Lecture ${l} Videos`);
     for (let s = 1; s <= numSegs; s++) {
       const numKcs = ((cfg.kcsPerSegment||[])[l-1]||[])[s-1] ?? 1;
-      out += `\n  Lecture ${l}.${s}\n`;
-      out += field('Segment Title', `e.g., ${l}.${s} [Segment title]`);
+      const segTitle = ((cfg.segmentTitles||[])[l-1]||[])[s-1];
+      out += `\n  Lecture ${l}.${s}${segTitle ? ': '+segTitle : ''}\n`;
+      if (!segTitle) out += field('Segment Title', `e.g., ${l}.${s} [Segment title]`);
       for (let k = 1; k <= numKcs; k++) {
         out += `\n  KNOWLEDGE CHECK ${k}\n`;
         out += field('Question', 'Type your question here.');
@@ -1264,15 +1457,17 @@ function buildTxt(cfg) {
     const rSec = 3;
     out += h1(`Section ${rSec}: Recitations`);
     for (let r = 1; r <= cfg.recitations; r++) {
-      out += h2(`Recitation ${r} of ${cfg.recitations}`);
+      const recitTitle = (cfg.recitTitles||[])[r-1];
+      out += h2(recitTitle ? `Recitation ${r}: ${recitTitle}` : `Recitation ${r} of ${cfg.recitations}`);
       out += bigField('Recitation Overview', [
         '1–2 sentences here.',
         'Example: This recitation reinforces lecture concepts by walking through a worked example.',
       ]);
       const numRecitSegs = Array.isArray(cfg.recitSegs) ? (cfg.recitSegs[r - 1] || 1) : (cfg.recitSegs || 1);
       for (let s = 1; s <= numRecitSegs; s++) {
-        out += `\n  Recitation ${r}.${s}\n`;
-        out += field('Segment Title', `e.g., Recitation ${r}.${s} [Title]`);
+        const recitSegTitle = ((cfg.recitSegTitles||[])[r-1]||[])[s-1];
+        out += `\n  Recitation ${r}.${s}${recitSegTitle ? ': '+recitSegTitle : ''}\n`;
+        if (!recitSegTitle) out += field('Segment Title', `e.g., Recitation ${r}.${s} [Title]`);
       }
       out += bigField('Recitation Summary', ['1–2 sentence wrap-up.']);
     }
@@ -1284,13 +1479,15 @@ function buildTxt(cfg) {
   for (let a = 1; a <= cfg.assignments; a++) {
     const numParts    = (cfg.partsPerAssignment  || [])[a-1] || 2;
     const numProblems = (cfg.problemsPerPart      || [])[a-1] || 5;
-    out += h2(`Assignment ${a} of ${cfg.assignments}`);
+    const assignTitle = (cfg.assignTitles||[])[a-1];
+    out += h2(assignTitle ? `Assignment ${a}: ${assignTitle}` : `Assignment ${a} of ${cfg.assignments}`);
     out += bigField('Assignment Overview', [
       'Write 1–2 sentences describing the assignment.',
       `Example: In this assignment, you will practice the concepts from this module across ${numParts} part${numParts!==1?'s':''}.`,
     ]);
     for (let p = 1; p <= numParts; p++) {
-      out += h3(`Part ${p}`);
+      const partTitle = ((cfg.partTitles||[])[a-1]||[])[p-1];
+      out += h3(partTitle ? `Part ${p}: ${partTitle}` : `Part ${p}`);
       for (let q = 1; q <= numProblems; q++) {
         out += `\n  Question ${q}\n`;
         out += field('Question', 'Type your question here.');
@@ -1626,11 +1823,11 @@ async function buildDocx(cfg) {
   ];
 
   for (let l = 1; l <= cfg.lectures; l++) {
+    const lecTitle = (cfg.lectureTitles||[])[l-1];
     lecturesSection.push(
-      h2(`Lecture ${l} of ${cfg.lectures}`),
+      h2(lecTitle ? `Lecture ${l}: ${lecTitle}` : `Lecture ${l} of ${cfg.lectures}`),
       sp(60),
-      fieldBox("Lecture Title", `e.g., Lecture ${l}: [Title]`, GREEN_BG),
-      sp(80),
+      ...(lecTitle ? [] : [fieldBox("Lecture Title", `e.g., Lecture ${l}: [Title]`, GREEN_BG), sp(80)]),
 
       h3(`Lecture ${l} Overview`),
       sp(60),
@@ -1657,11 +1854,12 @@ async function buildDocx(cfg) {
     const numSegs_l = (cfg.segmentsPerLecture||[])[l-1] || 3;
     for (let s = 1; s <= numSegs_l; s++) {
       const kcTotal = ((cfg.kcsPerSegment||[])[l-1]||[])[s-1] ?? 1;
+      const segTitle = ((cfg.segmentTitles||[])[l-1]||[])[s-1];
       lecturesSection.push(
         sp(80),
         new Paragraph({spacing:{before:0,after:80},
-          children:[txt(`Lecture ${l}.${s}`,{bold:true,size:22,color:MED})]}),
-        fieldBox("Segment Title", `e.g., ${l}.${s} [Segment title]`, GREEN_BG),
+          children:[txt(`Lecture ${l}.${s}${segTitle ? ': '+segTitle : ''}`,{bold:true,size:22,color:MED})]}),
+        ...(segTitle ? [] : [fieldBox("Segment Title", `e.g., ${l}.${s} [Segment title]`, GREEN_BG)]),
       );
       for (let k = 1; k <= kcTotal; k++) {
         lecturesSection.push(...knowledgeCheck(k));
@@ -1703,8 +1901,9 @@ async function buildDocx(cfg) {
     );
 
     for (let r = 1; r <= cfg.recitations; r++) {
+      const recitTitle = (cfg.recitTitles||[])[r-1];
       recitSection.push(
-        h2(`Recitation ${r} of ${cfg.recitations}`),
+        h2(recitTitle ? `Recitation ${r}: ${recitTitle}` : `Recitation ${r} of ${cfg.recitations}`),
         sp(120),
 
         h3(`Recitation ${r} Overview`),
@@ -1723,12 +1922,13 @@ async function buildDocx(cfg) {
 
       const numRecitSegs2 = Array.isArray(cfg.recitSegs) ? (cfg.recitSegs[r - 1] || 1) : (cfg.recitSegs || 1);
       for (let s = 1; s <= numRecitSegs2; s++) {
+        const recitSegTitle = ((cfg.recitSegTitles||[])[r-1]||[])[s-1];
         recitSection.push(
           sp(80),
           new Paragraph({spacing:{before:0,after:80}, children:[
-            txt(`Recitation ${r}.${s}`,{bold:true,size:22,color:MED})
+            txt(`Recitation ${r}.${s}${recitSegTitle ? ': '+recitSegTitle : ''}`,{bold:true,size:22,color:MED})
           ]}),
-          fieldBox("Segment Title", `e.g., Recitation ${r}.${s} [Title]`, PURPLE_BG),
+          ...(recitSegTitle ? [] : [fieldBox("Segment Title", `e.g., Recitation ${r}.${s} [Title]`, PURPLE_BG)]),
           sp(120),
         );
       }
@@ -1762,9 +1962,10 @@ async function buildDocx(cfg) {
     for (let a = 1; a <= cfg.assignments; a++) {
       const numParts    = (cfg.partsPerAssignment  || [])[a - 1] || 2;
       const numProblems = (cfg.problemsPerPart      || [])[a - 1] || 5;
+      const assignTitle = (cfg.assignTitles||[])[a-1];
 
       assignSection.push(
-        h2(`Assignment ${a} of ${cfg.assignments}`),
+        h2(assignTitle ? `Assignment ${a}: ${assignTitle}` : `Assignment ${a} of ${cfg.assignments}`),
         sp(120),
 
         h3(`Assignment ${a} Overview`),
@@ -1778,8 +1979,9 @@ async function buildDocx(cfg) {
       );
 
       for (let p = 1; p <= numParts; p++) {
+        const partTitle = ((cfg.partTitles||[])[a-1]||[])[p-1];
         assignSection.push(
-          h3(`Part ${p}`),
+          h3(partTitle ? `Part ${p}: ${partTitle}` : `Part ${p}`),
           sp(60),
           ...(cfg.inclInstr ? [noteBox(`Part ${p} contains ${numProblems} multiple-choice question${numProblems!==1?'s':''}. Fill in each question, mark the correct answer, and provide an explanation.`), sp(80)] : []),
         );
