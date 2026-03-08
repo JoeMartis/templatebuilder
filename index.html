@@ -953,7 +953,7 @@ function renderKcRows(lecIdx, segCount, prevKcs) {
     const item = document.createElement('div');
     item.className = 'counter-item';
     item.innerHTML =
-      `<label>seg ${j}</label>` +
+      `<label>Segment ${j}</label>` +
       `<button class="counter-btn" onclick="adjustKc(${lecIdx},${j},-1)">−</button>` +
       `<input class="counter-val kc-input" type="number" id="kc_${lecIdx}_${j}" value="${kcVal}" min="0" max="5">` +
       `<button class="counter-btn" onclick="adjustKc(${lecIdx},${j},1)">+</button>`;
@@ -976,7 +976,7 @@ function renderSegTitleRows(lecIdx, segCount, prevTitles) {
     row.className = 'seg-title-row';
     const val = (prevTitles[j-1] || '').replace(/"/g,'&quot;');
     row.innerHTML =
-      `<label>Seg ${j}</label>` +
+      `<label>Segment ${j}</label>` +
       `<input type="text" id="seg_title_${lecIdx}_${j}" value="${val}" placeholder="Segment ${lecIdx}.${j} title (optional)">`;
     container.appendChild(row);
   }
@@ -1057,7 +1057,7 @@ function renderRecitSegTitleRows(recitIdx, segCount, prevTitles) {
     row.className = 'seg-title-row';
     const val = (prevTitles[j-1] || '').replace(/"/g,'&quot;');
     row.innerHTML =
-      `<label>Seg ${j}</label>` +
+      `<label>Segment ${j}</label>` +
       `<input type="text" id="recit_seg_title_${recitIdx}_${j}" value="${val}" placeholder="Recitation ${recitIdx}.${j} title (optional)">`;
     container.appendChild(row);
   }
