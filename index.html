@@ -1462,11 +1462,11 @@ async function generate() {
     if (format === 'txt') {
       const text = buildTxt(config);
       const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
-      const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.txt`;
+      const fname = `Module_${config.modNum}_Template.txt`;
       saveAs(blob, fname);
     } else {
       const blob = await buildDocx(config);
-      const fname = `MIT_Universal_AI_Module_${config.modNum}_Template.docx`;
+      const fname = `Module_${config.modNum}_Template.docx`;
       saveAs(blob, fname);
     }
 
@@ -1503,7 +1503,7 @@ function buildTxt(cfg) {
   let out = '';
 
   // Cover
-  out += `MIT UNIVERSAL AI — MODULE AUTHORING TEMPLATE\n`;
+  out += `MIT UNIVERSAL LEARNING — MODULE AUTHORING TEMPLATE\n`;
   out += `Module ${cfg.modNum}: ${cfg.modTitle}\n`;
   out += divider() + '\n';
   out += `Author(s):                ${cfg.authors}\n`;
@@ -1612,6 +1612,7 @@ function buildTxt(cfg) {
         out += bullets(['First Option [Choice]', 'Second Option [Choice]', 'Third Option [Choice]', 'Fourth Option [Choice]', 'Fifth Option [Choice]']);
         out += field('Correct answer', '___ (enter First, Second, Third, Fourth, or Fifth)');
         out += field('Explanation', 'Explain why the correct answer is right.');
+        out += field('Feedback — incorrect answer', 'Guide the learner to reconsider; point to the relevant concept.');
       }
     }
     out += bigField('Assignment Summary', ['1–2 sentences recapping what the assignment assessed.']);
@@ -1845,8 +1846,14 @@ async function buildDocx(cfg) {
             new Paragraph({spacing:{before:60,after:40}, children:[
               txt("Explanation:",{bold:true})
             ]}),
-            new Paragraph({spacing:{before:0,after:0}, children:[
+            new Paragraph({spacing:{before:0,after:80}, children:[
               txt("Explain why the correct answer is right.",{color:"999999",italics:true})
+            ]}),
+            new Paragraph({spacing:{before:60,after:40}, children:[
+              txt("Feedback — incorrect answer:",{bold:true})
+            ]}),
+            new Paragraph({spacing:{before:0,after:0}, children:[
+              txt("Guide the learner to reconsider; point to the relevant concept.",{color:"999999",italics:true})
             ]}),
           ]
         })]})]
@@ -1861,7 +1868,7 @@ async function buildDocx(cfg) {
   const cover = [
     sp(1440),
     new Paragraph({ spacing:{before:0,after:120}, children:[
-      txt("MIT Universal AI",{bold:true,size:60,color:MIT_RED})
+      txt("MIT Universal Learning",{bold:true,size:60,color:MIT_RED})
     ]}),
     new Paragraph({ spacing:{before:0,after:60}, children:[
       txt("Module Authoring Template",{size:36,color:DARK})
@@ -2207,7 +2214,7 @@ async function buildDocx(cfg) {
           new Paragraph({
             alignment:AlignmentType.CENTER,
             children:[
-              new TextRun({text:`MIT Universal AI  |  Module ${cfg.modNum}: ${cfg.modTitle}  |  Page `,size:16,font:"Arial",color:"999999"}),
+              new TextRun({text:`MIT Universal Learning  |  Module ${cfg.modNum}: ${cfg.modTitle}  |  Page `,size:16,font:"Arial",color:"999999"}),
               new TextRun({children:[PageNumber.CURRENT],size:16,font:"Arial",color:"999999"}),
             ]
           })
