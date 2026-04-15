@@ -1866,7 +1866,6 @@ async function buildDocx(cfg) {
   // COVER PAGE
   // ════════════════════════════════════════════════════════════
   const cover = [
-    sp(1440),
     new Paragraph({ spacing:{before:0,after:120}, children:[
       txt("MIT Universal Learning",{bold:true,size:60,color:MIT_RED})
     ]}),
