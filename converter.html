@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Template → Open edX Converter</title>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:         #0c0e13;
+    --bg-card:    rgba(255,255,255,0.035);
+    --bg-card-h:  rgba(255,255,255,0.055);
+    --bg-input:   rgba(255,255,255,0.06);
+    --surface:    rgba(255,255,255,0.07);
+    --border:     rgba(255,255,255,0.09);
+    --border-h:   rgba(255,255,255,0.16);
+    --text:       #e4e6ea;
+    --text-sec:   #9aa0a8;
+    --muted:      #5c6370;
+    --accent:     #818cf8;
+    --accent-dim: rgba(129,140,248,0.13);
+    --accent-glow:rgba(129,140,248,0.28);
+    --red:        #f87171;
+    --green:      #34d399;
+    --purple:     #a78bfa;
+    --orange:     #fbbf24;
+    --glow-1:     rgba(129,140,248,0.07);
+    --glow-2:     rgba(168,85,247,0.05);
+  }
+  [data-theme="light"] {
+    --bg:         #f5f6f8;
+    --bg-card:    #ffffff;
+    --bg-card-h:  #ffffff;
+    --bg-input:   #f0f1f4;
+    --surface:    #ebedf0;
+    --border:     #d8dbe0;
+    --border-h:   #c0c4cc;
+    --text:       #111318;
+    --text-sec:   #5a5f6b;
+    --muted:      #8b919d;
+    --accent:     #6366f1;
+    --accent-dim: rgba(99,102,241,0.1);
+    --accent-glow:rgba(99,102,241,0.18);
+    --red:        #dc2626;
+    --green:      #059669;
+    --purple:     #7c3aed;
+    --orange:     #d97706;
+    --glow-1:     rgba(99,102,241,0.04);
+    --glow-2:     rgba(139,92,246,0.03);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.35s, color 0.35s;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 0%, var(--glow-1) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 100%, var(--glow-2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px 100px;
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  header {
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeSlideUp 0.6s ease-out 0.05s forwards;
+    position: relative;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .eyebrow::after {
+    content: '';
+    flex: 1;
+    max-width: 48px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+  h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 40px);
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.03em;
+  }
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent), #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  [data-theme="light"] h1 em {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .subtitle {
+    font-size: 15px;
+    color: var(--text-sec);
+    line-height: 1.7;
+    max-width: 560px;
+  }
+  .theme-toggle {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-sec);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+    opacity: 0;
+    animation: fadeSlideUp 0.5s ease-out 0.1s forwards;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .card:hover { background: var(--bg-card-h); border-color: var(--border-h); }
+  [data-theme="light"] .card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    backdrop-filter: none;
+  }
+  .card-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-sec);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border-h);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .drop-zone.drag-over { transform: scale(1.01); }
+  .drop-zone-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+  .drop-zone-text {
+    font-size: 15px;
+    color: var(--text-sec);
+    margin-bottom: 6px;
+  }
+  .drop-zone-hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* File info */
+  .file-info {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(129,140,248,0.2);
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .file-info.show { display: flex; }
+  .file-info-icon { font-size: 24px; }
+  .file-info-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+  }
+  .file-info-size {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .file-info-remove {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: color 0.15s;
+  }
+  .file-info-remove:hover { color: var(--red); }
+
+  /* Log output */
+  .log {
+    display: none;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-sec);
+  }
+  [data-theme="light"] .log { background: #f8f9fa; }
+  .log.show { display: block; }
+  .log-line { margin-bottom: 2px; }
+  .log-ok { color: var(--green); }
+  .log-warn { color: var(--orange); }
+  .log-err { color: var(--red); }
+  .log-info { color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 36px;
+    background: var(--accent);
+    color: #0c0e13;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s, opacity 0.15s;
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+  .btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px var(--accent-glow);
+    filter: brightness(1.1);
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 28px;
+  }
+
+  /* Summary stats */
+  .stats {
+    display: none;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .stats.show { display: flex; }
+  .stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .stat-accent { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-dim); }
+  .stat-green  { color: var(--green);  border-color: rgba(52,211,153,0.25); background: rgba(52,211,153,0.08); }
+  .stat-purple { color: var(--purple); border-color: rgba(167,139,250,0.25); background: rgba(167,139,250,0.08); }
+  .stat-orange { color: var(--orange); border-color: rgba(251,191,36,0.25);  background: rgba(251,191,36,0.08); }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .footer-brand strong { color: var(--accent); }
+  .footer-brand a { color: var(--accent); text-decoration: none; }
+  .footer-brand a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">MIT Open Learning</div>
+    <h1>Template → <em>Open edX</em></h1>
+    <p class="subtitle">Upload a filled-out module template (.docx) and convert it into an importable Open edX course package (.tar.gz).</p>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle theme">
+      <span id="theme-icon">&#9790;</span>
+    </button>
+  </header>
+
+  <div class="card">
+    <div class="card-title">Upload Template</div>
+    <div class="card-desc">Drop your filled-out .docx template below. The converter will parse lectures, knowledge checks, assignments, and more.</div>
+
+    <div class="file-info" id="file-info">
+      <div class="file-info-icon">&#128196;</div>
+      <div class="file-info-name" id="file-name"></div>
+      <div class="file-info-size" id="file-size"></div>
+      <button class="file-info-remove" onclick="clearFile()" title="Remove file">&#10005;</button>
+    </div>
+
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" accept=".docx" onchange="handleFile(this.files[0])">
+      <div class="drop-zone-icon">&#128462;</div>
+      <div class="drop-zone-text">Drop .docx file here or click to browse</div>
+      <div class="drop-zone-hint">Accepts filled-out Module Template files</div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="log" id="log"></div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-convert" onclick="convert()" disabled>
+        <span>&#9881;</span> Convert to Open edX
+      </button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-brand"><strong>MIT</strong> Universal Learning — Office of Digital Learning</div>
+    <div class="footer-brand"><a href="index.html">Template Generator</a></div>
+  </footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════════
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  document.getElementById('theme-icon').innerHTML = next === 'light' ? '&#9728;' : '&#9790;';
+}
+(function initTheme() {
+  const saved = localStorage.getItem('theme') ||
+    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.innerHTML = '&#9728;';
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════════════════════
+let currentFile = null;
+let parsedCourse = null;
+
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+function handleFile(file) {
+  if (!file || !file.name.endsWith('.docx')) {
+    alert('Please upload a .docx file');
+    return;
+  }
+  currentFile = file;
+  parsedCourse = null;
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('file-info').classList.add('show');
+  dropZone.style.display = 'none';
+  document.getElementById('btn-convert').disabled = false;
+  document.getElementById('stats').classList.remove('show');
+  document.getElementById('log').classList.remove('show');
+  document.getElementById('log').innerHTML = '';
+}
+
+function clearFile() {
+  currentFile = null;
+  parsedCourse = null;
+  document.getElementById('file-info').classList.remove('show');
+  dropZone.style.display = '';
+  dropZone.querySelector('input').value = '';
+  document.getElementById('btn-convert').disabled = true;
+  document.getElementById('stats').classList.remove('show');
+  document.getElementById('log').classList.remove('show');
+  document.getElementById('log').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LOGGING
+// ═══════════════════════════════════════════════════════════════════
+function log(msg, cls='') {
+  const el = document.getElementById('log');
+  el.classList.add('show');
+  el.innerHTML += `<div class="log-line ${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN CONVERT FLOW
+// ═══════════════════════════════════════════════════════════════════
+async function convert() {
+  if (!currentFile) return;
+  const btn = document.getElementById('btn-convert');
+  btn.disabled = true;
+  btn.innerHTML = '<span>&#9881;</span> Converting...';
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('stats').classList.remove('show');
+
+  try {
+    log('Reading .docx file...', 'log-info');
+    const arrayBuf = await currentFile.arrayBuffer();
+
+    log('Extracting content with mammoth...', 'log-info');
+    const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuf });
+    if (result.messages.length) {
+      result.messages.forEach(m => log(`mammoth: ${m.message}`, 'log-warn'));
+    }
+
+    log('Parsing document structure...', 'log-info');
+    parsedCourse = parseHtml(result.value);
+    showStats(parsedCourse);
+
+    log('Generating Open edX OLX files...', 'log-info');
+    const olxFiles = generateOLX(parsedCourse);
+    log(`Created ${Object.keys(olxFiles).length} files`, 'log-ok');
+
+    log('Packaging tar.gz...', 'log-info');
+    const tarGzBlob = createTarGz(olxFiles);
+
+    log('Triggering download...', 'log-info');
+    const slug = slugify(parsedCourse.moduleTitle || 'course');
+    const fname = `Module_${parsedCourse.moduleNum || 'N'}_${slug}.tar.gz`;
+    downloadBlob(tarGzBlob, fname);
+    log(`Done! Saved as ${fname}`, 'log-ok');
+
+  } catch (e) {
+    log(`Error: ${e.message}`, 'log-err');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>&#9881;</span> Convert to Open edX';
+}
+
+function showStats(course) {
+  const el = document.getElementById('stats');
+  const lecs = course.lectures.length;
+  const segs = course.lectures.reduce((s, l) => s + l.segments.length, 0);
+  const kcs = course.lectures.reduce((s, l) => s + l.segments.reduce((s2, seg) => s2 + seg.knowledgeChecks.length, 0), 0);
+  const assigns = course.assignments.length;
+  const qs = course.assignments.reduce((s, a) => s + a.parts.reduce((s2, p) => s2 + p.questions.length, 0), 0);
+  const recits = course.recitations.length;
+
+  let html = '';
+  html += `<span class="stat stat-accent">${lecs} lecture${lecs!==1?'s':''}</span>`;
+  html += `<span class="stat stat-accent">${segs} segment${segs!==1?'s':''}</span>`;
+  html += `<span class="stat stat-green">${kcs} knowledge check${kcs!==1?'s':''}</span>`;
+  if (recits) html += `<span class="stat stat-purple">${recits} recitation${recits!==1?'s':''}</span>`;
+  html += `<span class="stat stat-orange">${assigns} assignment${assigns!==1?'s':''}</span>`;
+  html += `<span class="stat stat-orange">${qs} question${qs!==1?'s':''}</span>`;
+  el.innerHTML = html;
+  el.classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DOCX → HTML → STRUCTURED DATA
+// ═══════════════════════════════════════════════════════════════════
+function parseHtml(html) {
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+  const root = doc.body.firstElementChild;
+  const nodes = Array.from(root.children);
+
+  const course = {
+    moduleNum: '',
+    moduleTitle: '',
+    authors: '',
+    tas: '',
+    introduction: { overview: '', learningGoals: [] },
+    lectures: [],
+    recitations: [],
+    assignments: [],
+    conclusion: { summary: '', keyTakeaways: [] }
+  };
+
+  let section = 'cover';
+  let lecIdx = -1, recIdx = -1, assignIdx = -1;
+  let subSection = '';
+  let segIdx = -1;
+  let partIdx = -1;
+
+  for (let i = 0; i < nodes.length; i++) {
+    const el = nodes[i];
+    const tag = el.tagName.toLowerCase();
+    const text = el.textContent.trim();
+
+    if (!text) continue;
+
+    // Skip instruction boxes
+    if (tag === 'table' && text.includes('INSTRUCTIONS:')) continue;
+
+    // Detect top-level sections via h1
+    if (tag === 'h1') {
+      if (/section\s*\d*\s*:\s*introduction/i.test(text)) { section = 'intro'; subSection = ''; continue; }
+      if (/section\s*\d*\s*:\s*lectures/i.test(text)) { section = 'lectures'; subSection = ''; continue; }
+      if (/section\s*\d*\s*:\s*recitations/i.test(text)) { section = 'recitations'; subSection = ''; continue; }
+      if (/section\s*\d*\s*:\s*assignments/i.test(text)) { section = 'assignments'; subSection = ''; continue; }
+      if (/section\s*\d*\s*:\s*conclusion/i.test(text)) { section = 'conclusion'; subSection = ''; continue; }
+      if (/contents/i.test(text)) { section = 'toc'; continue; }
+      continue;
+    }
+
+    if (section === 'toc') continue;
+
+    // Cover page: extract module info from tables
+    if (section === 'cover') {
+      if (tag === 'table' || tag === 'p') {
+        if (/^Module\b/i.test(text) && !course.moduleTitle) {
+          const m = text.match(/Module\s+(\S+)\s*:\s*(.+)/i);
+          if (m) { course.moduleNum = m[1]; course.moduleTitle = m[2].trim(); }
+        }
+        if (/^Author/i.test(text)) {
+          const cleaned = text.replace(/^Author\(s\)\s*/i, '').trim();
+          if (cleaned) course.authors = cleaned;
+        }
+        if (/^Teaching Assistant/i.test(text)) {
+          const cleaned = text.replace(/^Teaching Assistant\(s\)\s*/i, '').trim();
+          if (cleaned && cleaned !== '[TA name]') course.tas = cleaned;
+        }
+      }
+      continue;
+    }
+
+    // INTRODUCTION
+    if (section === 'intro') {
+      if (tag === 'h2') {
+        if (/module overview/i.test(text)) subSection = 'overview';
+        else if (/learning goals/i.test(text)) subSection = 'goals';
+        continue;
+      }
+      if (subSection === 'overview' && tag === 'table') {
+        course.introduction.overview = extractTableContent(el);
+      }
+      if (subSection === 'goals' && (tag === 'ul' || tag === 'ol')) {
+        course.introduction.learningGoals = extractListItems(el);
+      }
+      continue;
+    }
+
+    // LECTURES
+    if (section === 'lectures') {
+      if (tag === 'h2' && /lecture\s+\d/i.test(text)) {
+        lecIdx++;
+        segIdx = -1;
+        const title = text.replace(/^Lecture\s+\d+\s*(of\s+\d+)?:?\s*/i, '').trim();
+        course.lectures.push({
+          title: title || `Lecture ${lecIdx + 1}`,
+          overview: '', objectives: [],
+          segments: [],
+          summary: '', keyTakeaways: []
+        });
+        subSection = '';
+        continue;
+      }
+      if (lecIdx < 0) continue;
+      const lec = course.lectures[lecIdx];
+
+      if (tag === 'h3') {
+        if (/overview/i.test(text)) subSection = 'lec_overview';
+        else if (/objectives/i.test(text)) subSection = 'lec_objectives';
+        else if (/videos/i.test(text)) subSection = 'lec_videos';
+        else if (/summary/i.test(text)) subSection = 'lec_summary';
+        continue;
+      }
+
+      if (subSection === 'lec_overview' && tag === 'table') {
+        lec.overview = extractTableContent(el);
+      }
+      if (subSection === 'lec_objectives' && (tag === 'ul' || tag === 'ol')) {
+        lec.objectives = extractListItems(el);
+      }
+
+      // Segment headers like "Lecture 1.2" or "Lecture 1.2: Title"
+      if (subSection === 'lec_videos' && tag === 'p') {
+        const segMatch = text.match(/^Lecture\s+\d+\.(\d+)\s*:?\s*(.*)/i);
+        if (segMatch) {
+          segIdx++;
+          lec.segments.push({
+            title: segMatch[2].trim() || `Segment ${segMatch[1]}`,
+            knowledgeChecks: []
+          });
+          continue;
+        }
+      }
+
+      // Segment title in a field box
+      if (subSection === 'lec_videos' && tag === 'table' && segIdx >= 0) {
+        const tText = text;
+        if (/Knowledge Check/i.test(tText)) {
+          const kc = parseKnowledgeCheck(el);
+          if (kc) lec.segments[segIdx].knowledgeChecks.push(kc);
+          continue;
+        }
+        if (/Segment Title/i.test(tText)) {
+          const title = extractFieldValue(el, 'Segment Title');
+          if (title && lec.segments[segIdx]) lec.segments[segIdx].title = title;
+          continue;
+        }
+      }
+
+      if (subSection === 'lec_summary' && tag === 'table') {
+        lec.summary = extractTableContent(el);
+      }
+      if (subSection === 'lec_summary' && (tag === 'ul' || tag === 'ol')) {
+        lec.keyTakeaways = extractListItems(el);
+      }
+      continue;
+    }
+
+    // RECITATIONS
+    if (section === 'recitations') {
+      if (tag === 'h2' && /recitation\s+\d/i.test(text)) {
+        recIdx++;
+        segIdx = -1;
+        const title = text.replace(/^Recitation\s+\d+\s*(of\s+\d+)?:?\s*/i, '').trim();
+        course.recitations.push({
+          title: title || `Recitation ${recIdx + 1}`,
+          overview: '', segments: [], summary: ''
+        });
+        subSection = '';
+        continue;
+      }
+      if (recIdx < 0) continue;
+      const rec = course.recitations[recIdx];
+
+      if (tag === 'h3') {
+        if (/overview/i.test(text)) subSection = 'rec_overview';
+        else if (/video/i.test(text)) subSection = 'rec_videos';
+        else if (/summary/i.test(text)) subSection = 'rec_summary';
+        continue;
+      }
+
+      if (subSection === 'rec_overview' && tag === 'table') {
+        rec.overview = extractTableContent(el);
+      }
+      if (subSection === 'rec_videos' && tag === 'p') {
+        const segMatch = text.match(/^Recitation\s+\d+\.(\d+)\s*:?\s*(.*)/i);
+        if (segMatch) {
+          segIdx++;
+          rec.segments.push({ title: segMatch[2].trim() || `Segment ${segMatch[1]}` });
+          continue;
+        }
+      }
+      if (subSection === 'rec_summary' && tag === 'table') {
+        rec.summary = extractTableContent(el);
+      }
+      continue;
+    }
+
+    // ASSIGNMENTS
+    if (section === 'assignments') {
+      if (tag === 'h2' && /assignment\s+\d/i.test(text)) {
+        assignIdx++;
+        partIdx = -1;
+        const title = text.replace(/^Assignment\s+\d+\s*(of\s+\d+)?:?\s*/i, '').trim();
+        course.assignments.push({
+          title: title || `Assignment ${assignIdx + 1}`,
+          overview: '', parts: [], summary: ''
+        });
+        subSection = 'assign_top';
+        continue;
+      }
+      if (assignIdx < 0) continue;
+      const assign = course.assignments[assignIdx];
+
+      if (tag === 'h3') {
+        if (/overview/i.test(text)) { subSection = 'assign_overview'; continue; }
+        if (/summary/i.test(text)) { subSection = 'assign_summary'; continue; }
+        if (/part\s+\d/i.test(text)) {
+          partIdx++;
+          const pTitle = text.replace(/^Part\s+\d+\s*:?\s*/i, '').trim();
+          assign.parts.push({ title: pTitle || `Part ${partIdx + 1}`, questions: [] });
+          subSection = 'assign_part';
+          continue;
+        }
+      }
+
+      if (subSection === 'assign_overview' && tag === 'table') {
+        assign.overview = extractTableContent(el);
+      }
+      if (subSection === 'assign_part' && tag === 'table' && partIdx >= 0) {
+        if (/^Question\s+\d/i.test(text)) {
+          const q = parseMcQuestion(el);
+          if (q) assign.parts[partIdx].questions.push(q);
+          continue;
+        }
+      }
+      if (subSection === 'assign_summary' && tag === 'table') {
+        assign.summary = extractTableContent(el);
+      }
+      continue;
+    }
+
+    // CONCLUSION
+    if (section === 'conclusion') {
+      if (tag === 'h2' && /module summary/i.test(text)) { subSection = 'conc_summary'; continue; }
+      if (tag === 'h3' && /key takeaways/i.test(text)) { subSection = 'conc_kt'; continue; }
+      if (subSection === 'conc_summary' && tag === 'table') {
+        course.conclusion.summary = extractTableContent(el);
+      }
+      if (subSection === 'conc_kt' && (tag === 'ul' || tag === 'ol')) {
+        course.conclusion.keyTakeaways = extractListItems(el);
+      }
+      continue;
+    }
+  }
+
+  log(`Parsed: Module ${course.moduleNum}: ${course.moduleTitle}`, 'log-ok');
+  log(`  ${course.lectures.length} lectures, ${course.recitations.length} recitations, ${course.assignments.length} assignments`, 'log-ok');
+  return course;
+}
+
+// ── Content extraction helpers ──
+
+function extractTableContent(tableEl) {
+  const cells = tableEl.querySelectorAll('td');
+  if (!cells.length) return '';
+  const td = cells[0];
+  const parts = [];
+  for (const child of td.children) {
+    const t = child.textContent.trim();
+    if (!t) continue;
+    // Skip labels and placeholder text
+    if (/^(Module Overview|Lecture Overview|Lecture Title|Segment Title|Recitation Overview|Recitation Summary|Assignment Overview|Assignment Summary|Lecture Summary|Module Summary|Notes to Production Manager)/i.test(t)) continue;
+    if (/^(Write \d|Type \d|1–2 sentence|Example:|e\.g\.,)/i.test(t)) continue;
+    if (/^\u{1F4A1}/u.test(t)) continue; // 💡 hint
+    parts.push(t);
+  }
+  return parts.join('\n').trim();
+}
+
+function extractFieldValue(tableEl, label) {
+  const cells = tableEl.querySelectorAll('td');
+  if (!cells.length) return '';
+  const td = cells[0];
+  for (const child of td.children) {
+    const t = child.textContent.trim();
+    if (t.startsWith(label)) continue;
+    if (/^e\.g\.,/.test(t)) continue;
+    if (t) return t;
+  }
+  return '';
+}
+
+function extractListItems(listEl) {
+  return Array.from(listEl.querySelectorAll('li'))
+    .map(li => li.textContent.trim())
+    .filter(t => t && !/^\(optional\)$/i.test(t));
+}
+
+function parseKnowledgeCheck(tableEl) {
+  const td = tableEl.querySelector('td');
+  if (!td) return null;
+  const lines = Array.from(td.children).map(el => ({
+    text: el.textContent.trim(),
+    bold: !!el.querySelector('strong') || el.tagName === 'STRONG',
+    html: el.innerHTML
+  }));
+
+  const kc = { question: '', choices: [], feedbackCorrect: '', feedbackIncorrect: '' };
+  let mode = '';
+
+  for (const line of lines) {
+    const t = line.text;
+    if (!t) continue;
+    if (/Knowledge Check/i.test(t)) continue;
+    if (/^Type:\s/i.test(t)) continue;
+    if (/^Question:/i.test(t) && line.bold) { mode = 'question'; continue; }
+    if (/^Answer choices/i.test(t)) { mode = 'choices'; continue; }
+    if (/^Feedback.*correct answer/i.test(t)) { mode = 'fb_correct'; continue; }
+    if (/^Feedback.*incorrect/i.test(t)) { mode = 'fb_incorrect'; continue; }
+
+    if (mode === 'question') { kc.question = t; mode = ''; continue; }
+    if (mode === 'choices') {
+      const isCorrect = /^[★✓✔]/.test(t);
+      const choiceText = t.replace(/^[□■★✓✔○●]\s*/, '').trim();
+      if (choiceText && !/^\[Choice\]$|^Choice$/i.test(choiceText)) {
+        kc.choices.push({ text: choiceText, correct: isCorrect });
+      }
+    }
+    if (mode === 'fb_correct') { kc.feedbackCorrect = t; mode = ''; }
+    if (mode === 'fb_incorrect') { kc.feedbackIncorrect = t; mode = ''; }
+  }
+  return (kc.question || kc.choices.length) ? kc : null;
+}
+
+function parseMcQuestion(tableEl) {
+  const td = tableEl.querySelector('td');
+  if (!td) return null;
+  const lines = Array.from(td.children).map(el => ({
+    text: el.textContent.trim(),
+    bold: !!el.querySelector('strong') || el.tagName === 'STRONG'
+  }));
+
+  const q = { question: '', choices: [], correctAnswer: '', explanation: '', feedbackIncorrect: '' };
+  let mode = '';
+
+  for (const line of lines) {
+    const t = line.text;
+    if (!t) continue;
+    if (/^Question\s+\d/i.test(t) && !t.includes(':')) continue;
+    if (/^Question:/i.test(t) && line.bold) { mode = 'question'; continue; }
+    if (/^Correct answer:/i.test(t)) {
+      q.correctAnswer = t.replace(/^Correct answer:\s*/i, '').replace(/\(.*\)/, '').trim();
+      mode = '';
+      continue;
+    }
+    if (/^Explanation:/i.test(t) && line.bold) { mode = 'explanation'; continue; }
+    if (/^Feedback.*incorrect/i.test(t)) { mode = 'fb_incorrect'; continue; }
+
+    if (mode === 'question') { q.question = t; mode = ''; continue; }
+    if (mode === '' && /^[○●□]\s/.test(t)) {
+      const choiceText = t.replace(/^[○●□■]\s*/, '').replace(/\s*\[Choice text\]\s*/g, '').trim();
+      if (choiceText && choiceText !== 'Choice') {
+        q.choices.push(choiceText);
+      }
+      continue;
+    }
+    if (mode === 'explanation') { q.explanation = t; mode = ''; }
+    if (mode === 'fb_incorrect') { q.feedbackIncorrect = t; mode = ''; }
+  }
+
+  // Mark correct choice
+  if (q.correctAnswer && q.choices.length) {
+    const idx = q.choices.findIndex(c =>
+      c.toLowerCase().startsWith(q.correctAnswer.toLowerCase()) ||
+      q.correctAnswer.toLowerCase().includes(c.toLowerCase().substring(0, 20))
+    );
+    q.correctIdx = idx >= 0 ? idx : 0;
+  } else {
+    q.correctIdx = 0;
+  }
+
+  return (q.question || q.choices.length) ? q : null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// OLX GENERATION
+// ═══════════════════════════════════════════════════════════════════
+function generateOLX(course) {
+  const files = {};
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const slug = s => slugify(s);
+
+  const org = 'MITx';
+  const courseId = `UL_Module_${course.moduleNum || 'N'}`;
+  const courseRun = 'course';
+  const displayName = `Module ${course.moduleNum}: ${course.moduleTitle}`;
+
+  const chapterRefs = [];
+
+  // ── Introduction ──
+  const introChapter = 'ch_introduction';
+  const introSeqs = [];
+
+  if (course.introduction.overview) {
+    const seqName = 'seq_intro_overview';
+    const vertName = 'vert_intro_overview';
+    const htmlName = 'html_intro_overview';
+    addHtmlComponent(files, htmlName, 'Module Overview', `<h3>Module Overview</h3>\n<p>${esc(course.introduction.overview)}</p>`);
+    files[`vertical/${vertName}.xml`] = `<vertical display_name="Module Overview">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+    files[`sequential/${seqName}.xml`] = `<sequential display_name="Module Overview">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+    introSeqs.push(seqName);
+  }
+
+  if (course.introduction.learningGoals.length) {
+    const seqName = 'seq_intro_goals';
+    const vertName = 'vert_intro_goals';
+    const htmlName = 'html_intro_goals';
+    const goalsHtml = '<h3>Module Learning Goals</h3>\n<p>By the end of this module, learners will be able to:</p>\n<ul>\n' +
+      course.introduction.learningGoals.map(g => `  <li>${esc(g)}</li>`).join('\n') + '\n</ul>';
+    addHtmlComponent(files, htmlName, 'Learning Goals', goalsHtml);
+    files[`vertical/${vertName}.xml`] = `<vertical display_name="Learning Goals">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+    files[`sequential/${seqName}.xml`] = `<sequential display_name="Learning Goals">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+    introSeqs.push(seqName);
+  }
+
+  if (introSeqs.length) {
+    files[`chapter/${introChapter}.xml`] = `<chapter display_name="Introduction">\n${introSeqs.map(s => `  <sequential url_name="${s}"/>`).join('\n')}\n</chapter>`;
+    chapterRefs.push(introChapter);
+  }
+
+  // ── Lectures ──
+  course.lectures.forEach((lec, li) => {
+    const chapName = `ch_lecture_${li+1}`;
+    const seqs = [];
+
+    // Overview + Objectives
+    if (lec.overview || lec.objectives.length) {
+      const seqName = `seq_lec${li+1}_overview`;
+      const vertName = `vert_lec${li+1}_overview`;
+      const htmlName = `html_lec${li+1}_overview`;
+      let content = '';
+      if (lec.overview) content += `<h3>Lecture Overview</h3>\n<p>${esc(lec.overview)}</p>\n`;
+      if (lec.objectives.length) {
+        content += '<h3>Learning Objectives</h3>\n<p>After this lecture, learners will be able to:</p>\n<ul>\n';
+        content += lec.objectives.map(o => `  <li>${esc(o)}</li>`).join('\n') + '\n</ul>';
+      }
+      addHtmlComponent(files, htmlName, 'Overview', content);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="Overview">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="Overview &amp; Objectives">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    }
+
+    // Segments + Knowledge Checks
+    lec.segments.forEach((seg, si) => {
+      const seqName = `seq_lec${li+1}_seg${si+1}`;
+      const verts = [];
+
+      // Video placeholder
+      const vidVert = `vert_lec${li+1}_seg${si+1}_vid`;
+      const vidHtml = `html_lec${li+1}_seg${si+1}_vid`;
+      addHtmlComponent(files, vidHtml, seg.title, `<p><em>[Video: ${esc(seg.title)}]</em></p>\n<p>Replace this HTML component with a Video component and enter the video URL.</p>`);
+      files[`vertical/${vidVert}.xml`] = `<vertical display_name="${esc(seg.title)}">\n  <html url_name="${vidHtml}"/>\n</vertical>`;
+      verts.push(vidVert);
+
+      // Knowledge Checks
+      seg.knowledgeChecks.forEach((kc, ki) => {
+        const probName = `prob_lec${li+1}_seg${si+1}_kc${ki+1}`;
+        const kcVert = `vert_lec${li+1}_seg${si+1}_kc${ki+1}`;
+        files[`problem/${probName}.xml`] = buildMcProblemXml(
+          `Knowledge Check ${ki+1}`, kc.question, kc.choices,
+          kc.feedbackCorrect, kc.feedbackIncorrect
+        );
+        files[`vertical/${kcVert}.xml`] = `<vertical display_name="Knowledge Check ${ki+1}">\n  <problem url_name="${probName}"/>\n</vertical>`;
+        verts.push(kcVert);
+      });
+
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="${esc(seg.title)}">\n${verts.map(v => `  <vertical url_name="${v}"/>`).join('\n')}\n</sequential>`;
+      seqs.push(seqName);
+    });
+
+    // Summary
+    if (lec.summary || lec.keyTakeaways.length) {
+      const seqName = `seq_lec${li+1}_summary`;
+      const vertName = `vert_lec${li+1}_summary`;
+      const htmlName = `html_lec${li+1}_summary`;
+      let content = '';
+      if (lec.summary) content += `<h3>Lecture Summary</h3>\n<p>${esc(lec.summary)}</p>\n`;
+      if (lec.keyTakeaways.length) {
+        content += '<h3>Key Takeaways</h3>\n<ul>\n';
+        content += lec.keyTakeaways.map(t => `  <li>${esc(t)}</li>`).join('\n') + '\n</ul>';
+      }
+      addHtmlComponent(files, htmlName, 'Summary', content);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="Summary">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="Summary &amp; Takeaways">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    }
+
+    const lecTitle = lec.title ? `Lecture ${li+1}: ${lec.title}` : `Lecture ${li+1}`;
+    files[`chapter/${chapName}.xml`] = `<chapter display_name="${esc(lecTitle)}">\n${seqs.map(s => `  <sequential url_name="${s}"/>`).join('\n')}\n</chapter>`;
+    chapterRefs.push(chapName);
+  });
+
+  // ── Recitations ──
+  course.recitations.forEach((rec, ri) => {
+    const chapName = `ch_recitation_${ri+1}`;
+    const seqs = [];
+
+    if (rec.overview) {
+      const seqName = `seq_rec${ri+1}_overview`;
+      const vertName = `vert_rec${ri+1}_overview`;
+      const htmlName = `html_rec${ri+1}_overview`;
+      addHtmlComponent(files, htmlName, 'Recitation Overview', `<h3>Overview</h3>\n<p>${esc(rec.overview)}</p>`);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="Overview">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="Overview">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    }
+
+    rec.segments.forEach((seg, si) => {
+      const seqName = `seq_rec${ri+1}_seg${si+1}`;
+      const vertName = `vert_rec${ri+1}_seg${si+1}`;
+      const htmlName = `html_rec${ri+1}_seg${si+1}`;
+      addHtmlComponent(files, htmlName, seg.title, `<p><em>[Video: ${esc(seg.title)}]</em></p>\n<p>Replace this HTML component with a Video component and enter the video URL.</p>`);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="${esc(seg.title)}">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="${esc(seg.title)}">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    });
+
+    if (rec.summary) {
+      const seqName = `seq_rec${ri+1}_summary`;
+      const vertName = `vert_rec${ri+1}_summary`;
+      const htmlName = `html_rec${ri+1}_summary`;
+      addHtmlComponent(files, htmlName, 'Summary', `<h3>Summary</h3>\n<p>${esc(rec.summary)}</p>`);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="Summary">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="Summary">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    }
+
+    const recTitle = rec.title ? `Recitation ${ri+1}: ${rec.title}` : `Recitation ${ri+1}`;
+    files[`chapter/${chapName}.xml`] = `<chapter display_name="${esc(recTitle)}">\n${seqs.map(s => `  <sequential url_name="${s}"/>`).join('\n')}\n</chapter>`;
+    chapterRefs.push(chapName);
+  });
+
+  // ── Assignments ──
+  course.assignments.forEach((assign, ai) => {
+    const chapName = `ch_assignment_${ai+1}`;
+    const seqs = [];
+
+    if (assign.overview) {
+      const seqName = `seq_assign${ai+1}_overview`;
+      const vertName = `vert_assign${ai+1}_overview`;
+      const htmlName = `html_assign${ai+1}_overview`;
+      addHtmlComponent(files, htmlName, 'Assignment Overview', `<h3>Overview</h3>\n<p>${esc(assign.overview)}</p>`);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="Overview">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="Overview">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    }
+
+    assign.parts.forEach((part, pi) => {
+      const seqName = `seq_assign${ai+1}_part${pi+1}`;
+      const verts = [];
+
+      part.questions.forEach((q, qi) => {
+        const probName = `prob_assign${ai+1}_part${pi+1}_q${qi+1}`;
+        const vertName = `vert_assign${ai+1}_part${pi+1}_q${qi+1}`;
+
+        const choices = q.choices.map((text, ci) => ({
+          text, correct: ci === q.correctIdx
+        }));
+        files[`problem/${probName}.xml`] = buildMcProblemXml(
+          `Question ${qi+1}`, q.question, choices,
+          q.explanation, q.feedbackIncorrect
+        );
+        files[`vertical/${vertName}.xml`] = `<vertical display_name="Question ${qi+1}">\n  <problem url_name="${probName}"/>\n</vertical>`;
+        verts.push(vertName);
+      });
+
+      const partTitle = part.title ? `Part ${pi+1}: ${part.title}` : `Part ${pi+1}`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="${esc(partTitle)}">\n${verts.map(v => `  <vertical url_name="${v}"/>`).join('\n')}\n</sequential>`;
+      seqs.push(seqName);
+    });
+
+    if (assign.summary) {
+      const seqName = `seq_assign${ai+1}_summary`;
+      const vertName = `vert_assign${ai+1}_summary`;
+      const htmlName = `html_assign${ai+1}_summary`;
+      addHtmlComponent(files, htmlName, 'Summary', `<h3>Summary</h3>\n<p>${esc(assign.summary)}</p>`);
+      files[`vertical/${vertName}.xml`] = `<vertical display_name="Summary">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+      files[`sequential/${seqName}.xml`] = `<sequential display_name="Summary">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+      seqs.push(seqName);
+    }
+
+    const assignTitle = assign.title ? `Assignment ${ai+1}: ${assign.title}` : `Assignment ${ai+1}`;
+    files[`chapter/${chapName}.xml`] = `<chapter display_name="${esc(assignTitle)}">\n${seqs.map(s => `  <sequential url_name="${s}"/>`).join('\n')}\n</chapter>`;
+    chapterRefs.push(chapName);
+  });
+
+  // ── Conclusion ──
+  if (course.conclusion.summary || course.conclusion.keyTakeaways.length) {
+    const chapName = 'ch_conclusion';
+    const seqs = [];
+
+    const seqName = 'seq_conclusion';
+    const vertName = 'vert_conclusion';
+    const htmlName = 'html_conclusion';
+    let content = '';
+    if (course.conclusion.summary) content += `<h3>Module Summary</h3>\n<p>${esc(course.conclusion.summary)}</p>\n`;
+    if (course.conclusion.keyTakeaways.length) {
+      content += '<h3>Key Takeaways</h3>\n<ul>\n';
+      content += course.conclusion.keyTakeaways.map(t => `  <li>${esc(t)}</li>`).join('\n') + '\n</ul>';
+    }
+    addHtmlComponent(files, htmlName, 'Conclusion', content);
+    files[`vertical/${vertName}.xml`] = `<vertical display_name="Conclusion">\n  <html url_name="${htmlName}"/>\n</vertical>`;
+    files[`sequential/${seqName}.xml`] = `<sequential display_name="Module Summary &amp; Takeaways">\n  <vertical url_name="${vertName}"/>\n</sequential>`;
+    seqs.push(seqName);
+
+    files[`chapter/${chapName}.xml`] = `<chapter display_name="Conclusion">\n${seqs.map(s => `  <sequential url_name="${s}"/>`).join('\n')}\n</chapter>`;
+    chapterRefs.push(chapName);
+  }
+
+  // ── Root course files ──
+  files['course.xml'] = `<course url_name="${courseRun}" org="${org}" course="${courseId}"/>`;
+  files[`course/${courseRun}.xml`] = `<course display_name="${esc(displayName)}">\n${chapterRefs.map(c => `  <chapter url_name="${c}"/>`).join('\n')}\n</course>`;
+
+  // ── Policies ──
+  files[`policies/${courseRun}/policy.json`] = JSON.stringify({
+    "course/course": {
+      display_name: displayName,
+      start: new Date().toISOString().split('T')[0] + "T00:00:00Z",
+      end: "",
+      enrollment_start: "",
+      enrollment_end: "",
+      course_image: "",
+      language: "en"
+    }
+  }, null, 2);
+
+  files[`policies/${courseRun}/grading_policy.json`] = JSON.stringify({
+    GRADER: [
+      { type: "Homework", min_count: 1, drop_count: 0, weight: 0.5 },
+      { type: "Exam", min_count: 0, drop_count: 0, weight: 0.5 }
+    ],
+    GRADE_CUTOFFS: { Pass: 0.6 }
+  }, null, 2);
+
+  return files;
+}
+
+function addHtmlComponent(files, name, displayName, content) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  files[`html/${name}.xml`] = `<html filename="${name}" display_name="${esc(displayName)}"/>`;
+  files[`html/${name}.html`] = content;
+}
+
+function buildMcProblemXml(displayName, question, choices, feedbackCorrect, feedbackIncorrect) {
+  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  let xml = `<problem display_name="${esc(displayName)}" max_attempts="2" weight="1.0" markdown="null">\n`;
+  xml += `  <multiplechoiceresponse>\n`;
+  xml += `    <label>${esc(question || 'Question text')}</label>\n`;
+  xml += `    <choicegroup type="MultipleChoice" shuffle="true">\n`;
+
+  if (choices.length === 0) {
+    xml += `      <choice correct="true">Choice A</choice>\n`;
+    xml += `      <choice correct="false">Choice B</choice>\n`;
+    xml += `      <choice correct="false">Choice C</choice>\n`;
+    xml += `      <choice correct="false">Choice D</choice>\n`;
+  } else {
+    choices.forEach(c => {
+      xml += `      <choice correct="${c.correct ? 'true' : 'false'}">${esc(c.text)}</choice>\n`;
+    });
+  }
+
+  xml += `    </choicegroup>\n`;
+
+  if (feedbackCorrect || feedbackIncorrect) {
+    xml += `    <solution>\n      <div class="detailed-solution">\n`;
+    if (feedbackCorrect) xml += `        <p><strong>Correct:</strong> ${esc(feedbackCorrect)}</p>\n`;
+    if (feedbackIncorrect) xml += `        <p><strong>Incorrect:</strong> ${esc(feedbackIncorrect)}</p>\n`;
+    xml += `      </div>\n    </solution>\n`;
+  }
+
+  xml += `  </multiplechoiceresponse>\n</problem>`;
+  return xml;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAR.GZ CREATION
+// ═══════════════════════════════════════════════════════════════════
+function createTarGz(files) {
+  const enc = new TextEncoder();
+  const blocks = [];
+  const topDir = 'course';
+
+  // Collect all directories
+  const dirs = new Set();
+  dirs.add(topDir + '/');
+  for (const path of Object.keys(files)) {
+    const parts = path.split('/');
+    for (let i = 1; i <= parts.length - 1; i++) {
+      dirs.add(topDir + '/' + parts.slice(0, i).join('/') + '/');
+    }
+  }
+
+  // Add directory entries
+  for (const dir of [...dirs].sort()) {
+    blocks.push(tarHeader(dir, 0, '5'));
+  }
+
+  // Add file entries
+  for (const [path, content] of Object.entries(files)) {
+    const fullPath = topDir + '/' + path;
+    const data = enc.encode(content);
+    blocks.push(tarHeader(fullPath, data.length, '0'));
+    blocks.push(padTo512(data));
+  }
+
+  // End-of-archive marker
+  blocks.push(new Uint8Array(1024));
+
+  // Concatenate
+  const totalLen = blocks.reduce((s, b) => s + b.length, 0);
+  const tar = new Uint8Array(totalLen);
+  let offset = 0;
+  for (const block of blocks) {
+    tar.set(block, offset);
+    offset += block.length;
+  }
+
+  // Gzip
+  const gzipped = pako.gzip(tar);
+  return new Blob([gzipped], { type: 'application/gzip' });
+}
+
+function tarHeader(name, size, typeflag) {
+  const header = new Uint8Array(512);
+  const enc = new TextEncoder();
+
+  writeStr(header, 0, name, 100);
+  writeOctal(header, 100, typeflag === '5' ? 0o755 : 0o644, 8);
+  writeOctal(header, 108, 0, 8);  // uid
+  writeOctal(header, 116, 0, 8);  // gid
+  writeOctal(header, 124, size, 12);
+  writeOctal(header, 136, Math.floor(Date.now() / 1000), 12);
+  header[156] = typeflag.charCodeAt(0);
+
+  // USTAR magic
+  writeStr(header, 257, 'ustar\0', 6);
+  writeStr(header, 263, '00', 2);
+
+  // Compute checksum (treat checksum field as spaces)
+  for (let i = 148; i < 156; i++) header[i] = 0x20;
+  let sum = 0;
+  for (let i = 0; i < 512; i++) sum += header[i];
+  const ckStr = sum.toString(8).padStart(6, '0') + '\0 ';
+  writeStr(header, 148, ckStr, 8);
+
+  return header;
+}
+
+function writeStr(buf, offset, str, len) {
+  const enc = new TextEncoder();
+  const bytes = enc.encode(str);
+  for (let i = 0; i < Math.min(bytes.length, len); i++) {
+    buf[offset + i] = bytes[i];
+  }
+}
+
+function writeOctal(buf, offset, val, len) {
+  const str = val.toString(8).padStart(len - 1, '0') + '\0';
+  writeStr(buf, offset, str, len);
+}
+
+function padTo512(data) {
+  const padded = Math.ceil(data.length / 512) * 512;
+  if (padded === data.length && data.length > 0) return data;
+  const buf = new Uint8Array(padded);
+  buf.set(data);
+  return buf;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 40);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
